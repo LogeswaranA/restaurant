@@ -11,7 +11,7 @@
   --color-ink: #2b211b; /* espresso */
   --color-ink-soft: #5c4e44;
   --color-saffron: #e3a33b;
-  --color-saffron-deep: #9a5b00; /* saffron dark enough for text on cream */
+  --color-saffron-deep: #8a5200; /* text-safe saffron: 5.26:1 on cream-deep, 5.93:1 on cream */
   --color-sage: #8fae8b;
   --color-sage-deep: #3e5540;
   --color-on-dark: #fbf5ec;
@@ -453,11 +453,13 @@ main:focus {
   color: var(--color-on-dark);
 }
 
+/* Equal-width buttons: side by side when they fit, full-width and stacked when they don't. */
 .hero__actions {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 13rem), 1fr));
   gap: 0.875rem;
+  max-width: 30rem;
+  margin-inline: auto;
 }
 
 /* --------------------------------------------------------------------------
@@ -726,6 +728,11 @@ main:focus {
 
 .site-footer__bottom p {
   margin: 0;
+}
+
+/* Keep "Photo credits" on one line; the sentence wraps before it instead. */
+.site-footer__note a {
+  white-space: nowrap;
 }
 
 .page-end {

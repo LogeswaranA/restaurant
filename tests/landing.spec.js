@@ -316,6 +316,56 @@ test.describe('Navigation', () => {
     await expect(page).toHaveURL(/#about$/);
   });
 
+  test('AC-10: tapping the brand link closes the open mobile menu', async ({ page }) => {
+    await page.setViewportSize(VIEWPORTS.mobile);
+    await page.goto('/');
+    const toggle = page.locator('header nav button');
+
+    // Scroll away first so the brand link has somewhere to take us.
+    await page.evaluate(() => window.scrollTo({ top: 600, behavior: 'instant' }));
+    await toggle.click();
+    await expect(toggle).toHaveAttribute('aria-expanded', 'true');
+    await expect(navLink(page, 'About')).toBeVisible();
+
+    await page.locator('header a.brand').click();
+    await expect(toggle).toHaveAttribute('aria-expanded', 'false');
+    await expect(navLink(page, 'About')).toBeHidden();
+    await expect(page).toHaveURL(/#home$/);
+  });
+
+  test('AC-10: the mobile menu closes when the viewport grows to desktop width', async ({ page }) => {
+    await page.setViewportSize(VIEWPORTS.mobile);
+    await page.goto('/');
+    const toggle = page.locator('header nav button');
+    await toggle.click();
+    await expect(toggle).toHaveAttribute('aria-expanded', 'true');
+    await page.setViewportSize(VIEWPORTS.desktop);
+    await expect(toggle).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  test('AC-9: the current link follows scripted scrolling after a nav click', async ({ page }) => {
+    await page.setViewportSize(VIEWPORTS.desktop);
+    await page.goto('/');
+    const activeHrefs = () =>
+      page.locator('header nav a[aria-current="true"]').evaluateAll((links) => links.map((a) => a.hash));
+
+    await navLink(page, 'Gallery').click();
+    await waitForScrollEnd(page);
+    await expect.poll(activeHrefs).toEqual(['#gallery']);
+
+    // No wheel/touch/key involved (like dragging the scrollbar): the link must not go stale.
+    await page.evaluate(() => {
+      const about = document.querySelector('#about');
+      window.scrollTo({ top: about.getBoundingClientRect().top + window.scrollY, behavior: 'instant' });
+    });
+    await waitForScrollEnd(page);
+    await expect.poll(activeHrefs).toEqual(['#about']);
+
+    await page.evaluate(() => window.scrollTo({ top: 0, behavior: 'instant' }));
+    await waitForScrollEnd(page);
+    await expect.poll(activeHrefs).toEqual(['#home']);
+  });
+
   test('AC-10: Escape closes the mobile menu and returns focus to the toggle', async ({ page }) => {
     await page.setViewportSize(VIEWPORTS.mobile);
     await page.goto('/');
@@ -383,6 +433,49 @@ test.describe('Accessibility basics (AC-12)', () => {
       const visible = (focus.outlineStyle !== 'none' && focus.outlineWidth > 0) || focus.boxShadow !== 'none';
       expect(visible, `focus style on "${focus.text}"`).toBe(true);
     }
+  });
+
+  test('every section eyebrow has at least 4.5:1 contrast against its background', async ({ page }) => {
+    await page.goto('/');
+    const samples = await page.locator('main .eyebrow').evaluateAll((els) =>
+      els.map((el) => {
+        // Effective background: the nearest ancestor with a non-transparent background colour.
+        let bg = 'rgb(255, 255, 255)';
+        for (let node = el; node; node = node.parentElement) {
+          const color = getComputedStyle(node).backgroundColor;
+          if (!/^rgba\(.*,\s*0\)$|^transparent$/.test(color)) {
+            bg = color;
+            break;
+          }
+        }
+        return { text: el.textContent.trim(), color: getComputedStyle(el).color, bg };
+      }),
+    );
+
+    expect(samples.map((s) => s.text)).toEqual(expect.arrayContaining(['Our story', 'From our kitchen']));
+    for (const { text, color, bg } of samples) {
+      const background = parseColor(bg);
+      const ratio = contrastRatio(composite(parseColor(color), background), background);
+      expect(ratio, `"${text}" (${color} on ${bg})`).toBeGreaterThanOrEqual(4.5);
+    }
+  });
+
+  test('hero CTAs are equal width when stacked and the credits link stays on one line at 375px', async ({
+    page,
+  }) => {
+    await page.setViewportSize(VIEWPORTS.mobile);
+    await page.goto('/');
+    const view = await page.locator('#home').getByRole('link', { name: 'View Gallery' }).boundingBox();
+    const reserve = await page.locator('#home').getByRole('link', { name: 'Reserve a Table' }).boundingBox();
+    expect(reserve.y, 'buttons are stacked at 375px').toBeGreaterThan(view.y);
+    expect(Math.abs(view.width - reserve.width)).toBeLessThanOrEqual(1);
+    expect(Math.abs(view.x - reserve.x)).toBeLessThanOrEqual(1);
+
+    const credits = page.locator('footer').getByRole('link', { name: 'Photo credits' });
+    expect(await credits.evaluate((el) => el.getClientRects().length)).toBe(1);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(
+      VIEWPORTS.mobile.width,
+    );
   });
 
   test('hero text contrast against the overlay is at least 4.5:1', async ({ page }) => {

@@ -35,7 +35,7 @@ if (toggle && menu) {
     }
   });
 
-  // A click outside the header closes the menu.
+  // A click outside the header closes the menu (in-page links, brand included, close it below).
   document.addEventListener('click', (event) => {
     if (isMenuOpen() && !header.contains(event.target)) setMenuOpen(false);
   });
@@ -48,34 +48,52 @@ if (toggle && menu) {
 
 /* ---------------------------------------------------------------------------
    2. Active section
-   An IntersectionObserver watches a band just below the sticky header; the
-   last section (in document order) inside that band is the current one.
-   A sentinel at the very end of the page marks the footer as current once the
-   page cannot scroll any further. When the visitor follows an in-page link we
-   honour that target until they scroll by themselves again.
+   The current section is the last one (in document order) whose top has
+   reached a reading line 40% down the viewport; once the page cannot scroll
+   any further the last section (the footer) is current. It is recomputed from
+   live geometry whenever an IntersectionObserver sees a section cross that
+   band and again whenever scrolling ends, so scrollbar drags and scripted
+   scrolling cannot leave a stale link behind.
+   When the visitor follows an in-page link we honour that target (sections
+   near the page end may never reach the reading line) for the scroll that the
+   link starts; any later scroll hands control back to the geometry.
    --------------------------------------------------------------------------- */
+
+const READING_LINE = 0.4; // fraction of the viewport height, matches the observer's -60% bottom margin
+const INTENT_WINDOW_MS = 2000; // how long a link's own scroll may take to finish
 
 const sections = navLinks
   .map((link) => document.getElementById(link.hash.slice(1)))
   .filter(Boolean);
 const sectionIds = new Set(sections.map((section) => section.id));
 
-const inBand = new Set();
-let atPageEnd = false;
 let intendedId = null;
+let intentStartedAt = 0;
+let intentScrollPending = false;
 
 function setActive(id) {
+  if (!id) return;
   for (const link of navLinks) {
     if (link.hash === `#${id}`) link.setAttribute('aria-current', 'true');
     else link.removeAttribute('aria-current');
   }
 }
 
+function currentSectionId() {
+  if (!sections.length) return null;
+  const root = document.documentElement;
+  const atPageEnd = window.scrollY + window.innerHeight >= root.scrollHeight - 2;
+  if (atPageEnd && window.scrollY > 0) return sections[sections.length - 1].id;
+  const line = window.innerHeight * READING_LINE;
+  let current = sections[0];
+  for (const section of sections) {
+    if (section.getBoundingClientRect().top <= line) current = section;
+  }
+  return current.id;
+}
+
 function updateActive() {
-  if (intendedId) return setActive(intendedId);
-  if (atPageEnd && sections.length) return setActive(sections[sections.length - 1].id);
-  const current = sections.filter((section) => inBand.has(section)).pop();
-  if (current) setActive(current.id);
+  setActive(intendedId ?? currentSectionId());
 }
 
 function targetIdFromHash(hash) {
@@ -83,70 +101,82 @@ function targetIdFromHash(hash) {
   return sectionIds.has(id) ? id : null;
 }
 
+function startIntent(id) {
+  intendedId = id;
+  intentStartedAt = performance.now();
+  intentScrollPending = true;
+  setActive(id);
+}
+
+function releaseIntent() {
+  if (!intendedId) return;
+  intendedId = null;
+  intentScrollPending = false;
+  updateActive();
+}
+
+// Called once scrolling has settled (scrollend, or a short pause in scroll events).
+function onScrollEnd() {
+  const isLinkScroll =
+    intendedId && intentScrollPending && performance.now() - intentStartedAt < INTENT_WINDOW_MS;
+  if (isLinkScroll) {
+    intentScrollPending = false; // the link's own scroll has landed; keep its target
+  } else {
+    intendedId = null; // scrollbar drag, scripted scroll, or anything else: trust the geometry
+    intentScrollPending = false;
+  }
+  updateActive();
+}
+
+if ('onscrollend' in window) {
+  window.addEventListener('scrollend', onScrollEnd);
+} else {
+  let scrollTimer;
+  window.addEventListener(
+    'scroll',
+    () => {
+      clearTimeout(scrollTimer);
+      scrollTimer = setTimeout(onScrollEnd, 150);
+    },
+    { passive: true },
+  );
+}
+
 if ('IntersectionObserver' in window && sections.length) {
   const headerHeight = Math.round(header?.getBoundingClientRect().height ?? 0);
-
-  const bandObserver = new IntersectionObserver(
-    (entries) => {
-      for (const entry of entries) {
-        if (entry.isIntersecting) inBand.add(entry.target);
-        else inBand.delete(entry.target);
-      }
-      updateActive();
-    },
-    { rootMargin: `-${headerHeight}px 0px -60% 0px` },
-  );
+  const bandObserver = new IntersectionObserver(updateActive, {
+    rootMargin: `-${headerHeight}px 0px -${100 - READING_LINE * 100}% 0px`,
+  });
   sections.forEach((section) => bandObserver.observe(section));
 
   const pageEnd = document.querySelector('[data-page-end]');
-  if (pageEnd) {
-    new IntersectionObserver(([entry]) => {
-      atPageEnd = entry.isIntersecting;
-      updateActive();
-    }).observe(pageEnd);
-  }
-} else {
-  // Old browsers: highlight the first link so exactly one is marked.
-  if (sections[0]) setActive(sections[0].id);
+  if (pageEnd) new IntersectionObserver(updateActive).observe(pageEnd);
 }
 
 // In-page links (nav, brand, hero CTA): mark the target straight away, close the mobile menu.
 document.addEventListener('click', (event) => {
   const link = event.target.closest('a[href^="#"]');
   if (!link) return;
-  if (menu?.contains(link)) setMenuOpen(false);
+  if (isMenuOpen()) setMenuOpen(false);
   const id = targetIdFromHash(link.hash);
-  if (id) {
-    intendedId = id;
-    setActive(id);
-  } else {
-    releaseIntent();
-  }
+  if (id) startIntent(id);
+  else releaseIntent();
 });
 
-// Back/forward through anchors.
+// Back/forward through anchors, or a script setting location.hash.
 window.addEventListener('hashchange', () => {
   const id = targetIdFromHash(window.location.hash);
-  if (id) {
-    intendedId = id;
-    setActive(id);
-  }
+  if (id) startIntent(id);
+  else releaseIntent();
 });
 
-// Deep link on first load (e.g. /#gallery).
+// Deep link on first load (e.g. /#gallery); otherwise start from the geometry.
 const initialId = targetIdFromHash(window.location.hash);
-if (initialId) {
-  intendedId = initialId;
-  setActive(initialId);
-}
+if (initialId) startIntent(initialId);
+else updateActive();
 
-// Any scrolling the visitor does themselves hands control back to the observer.
+// Any scrolling the visitor does themselves hands control back to the geometry.
 const SCROLL_KEYS = new Set(['ArrowUp', 'ArrowDown', 'PageUp', 'PageDown', 'Home', 'End', ' ']);
-function releaseIntent() {
-  if (!intendedId) return;
-  intendedId = null;
-  updateActive();
-}
 window.addEventListener('wheel', releaseIntent, { passive: true });
 window.addEventListener('touchmove', releaseIntent, { passive: true });
 window.addEventListener('keydown', (event) => {
