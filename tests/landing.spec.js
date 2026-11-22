@@ -106,7 +106,9 @@ test.describe('Structure & content', () => {
     await expect(viewGallery).toHaveAttribute('href', '#gallery');
 
     const reserve = page.locator('#home').getByRole('link', { name: 'Reserve a Table' });
-    await expect(reserve).toHaveAttribute('href', /^(tel:|mailto:)/);
+    // The hero CTA opens the booking page; phone bookings stay available via the footer tel: link.
+    await expect(reserve).toHaveAttribute('href', '/booking.html');
+    await expect(page.locator('footer#contact a[href^="tel:"]')).not.toHaveCount(0);
   });
 
   test('AC-4: headings are nested without skipped levels; about has two paragraphs', async ({ page }) => {
