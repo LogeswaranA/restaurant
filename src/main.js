@@ -8,7 +8,23 @@ const SCROLL_DEBOUNCE_MS = 150; // fallback for browsers without `scrollend`
 const header = document.querySelector('.site-header');
 const toggle = document.querySelector('.nav-toggle');
 const menu = toggle && document.getElementById(toggle.getAttribute('aria-controls'));
-const navLinks = Array.from(document.querySelectorAll('.site-nav__link'));
+const allNavLinks = Array.from(document.querySelectorAll('.site-nav__link'));
+// A link marked aria-current="page" means this page is not the one-page scroller: no scroll-spy.
+const isSpyPage = !allNavLinks.some((link) => link.getAttribute('aria-current') === 'page');
+
+// Section a nav link stands for on this page, or null. `data-section` names a section whose
+// link points at another page (the home "About" link); otherwise pure hash links count, and
+// so do links to the current path.
+function linkTargetId(link) {
+  if (link.dataset.section) return link.dataset.section;
+  const samePage = !link.getAttribute('href').startsWith('#') && link.pathname === window.location.pathname;
+  const pureHash = link.getAttribute('href').startsWith('#');
+  return (pureHash || samePage) && link.hash ? link.hash.slice(1) : null;
+}
+
+const navLinks = isSpyPage
+  ? allNavLinks.filter((link) => document.getElementById(linkTargetId(link) ?? ''))
+  : [];
 
 /* ---------- Mobile menu ---------- */
 
@@ -44,7 +60,7 @@ if (toggle && menu) {
 /* ---------- Scroll-spy ---------- */
 
 const sections = navLinks
-  .map((link) => document.getElementById(link.hash.slice(1)))
+  .map((link) => document.getElementById(linkTargetId(link)))
   .filter(Boolean);
 const sectionIds = new Set(sections.map((section) => section.id));
 
@@ -55,7 +71,7 @@ let intentPending = false; // true until the first scroll settles after the clic
 function markCurrent(id) {
   if (!id) return;
   for (const link of navLinks) {
-    if (link.hash === `#${id}`) link.setAttribute('aria-current', 'true');
+    if (linkTargetId(link) === id) link.setAttribute('aria-current', 'true');
     else link.removeAttribute('aria-current');
   }
 }
@@ -130,11 +146,15 @@ if ('IntersectionObserver' in window && sections.length) {
   if (pageEnd) new IntersectionObserver(update).observe(pageEnd);
 }
 
-// In-page anchor clicks (menu links, brand, buttons) close the menu and set intent.
+// Any link click inside the header (menu links, brand, other pages) closes the menu.
+header?.addEventListener('click', (event) => {
+  if (event.target.closest('a') && isMenuOpen()) setMenuOpen(false);
+});
+
+// In-page anchor clicks (menu links, brand, buttons) set the scroll-spy intent.
 document.addEventListener('click', (event) => {
   const anchor = event.target.closest('a[href^="#"]');
   if (!anchor) return;
-  if (isMenuOpen()) setMenuOpen(false);
   const id = sectionIdFromHash(anchor.hash);
   if (id) setIntent(id);
   else clearIntent();

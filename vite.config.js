@@ -1,9 +1,10 @@
 import { resolve } from 'node:path';
 import { defineConfig } from 'vite';
 
-// Add one entry per HTML page (e.g. about: resolve(import.meta.dirname, 'about.html')).
+// One entry per HTML page.
 const pages = {
   main: resolve(import.meta.dirname, 'index.html'),
+  about: resolve(import.meta.dirname, 'about.html'),
 };
 
 export default defineConfig({
