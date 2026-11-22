@@ -1,13 +1,14 @@
 {
-  "name": "restaurant-view",
+  "name": "saffron-and-sage",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
+  "description": "Single-page restaurant landing page theme (Vite + vanilla HTML/CSS/JS).",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "test": "vite build && playwright test"
+    "test": "playwright test"
   },
   "devDependencies": {
     "@playwright/test": "^1.65.1",

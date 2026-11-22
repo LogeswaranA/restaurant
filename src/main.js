@@ -1,9 +1,10 @@
-import './styles.css';
-
-const DESKTOP_QUERY = '(min-width: 48em)';
-const ACTIVE_LINE = 0.4; // fraction of the viewport height where a section becomes "current"
-const INTENT_WINDOW_MS = 2000; // how long a clicked link wins over scroll position
-const SCROLL_DEBOUNCE_MS = 150; // fallback for browsers without `scrollend`
+/**
+ * Saffron & Sage — landing page behaviour.
+ *  1. Mobile navigation toggle (aria-expanded / aria-controls).
+ *  2. Active nav link for the section in view (aria-current="true", exactly one).
+ *  3. Current year in the footer.
+ */
+const DESKTOP_QUERY = '(min-width: 48em)'; // keep in sync with the nav breakpoint in styles.css
 
 const header = document.querySelector('.site-header');
 const toggle = document.querySelector('.nav-toggle');
@@ -24,19 +25,23 @@ const navLinks = isSpyPage
   ? allNavLinks.filter((link) => document.getElementById(linkTargetId(link) ?? ''))
   : [];
 
-/* ---------- Mobile menu ---------- */
+/* ---------------------------------------------------------------------------
+   1. Mobile navigation
+   --------------------------------------------------------------------------- */
 
 function isMenuOpen() {
   return toggle?.getAttribute('aria-expanded') === 'true';
 }
 
 function setMenuOpen(open) {
-  if (toggle) toggle.setAttribute('aria-expanded', String(open));
+  if (!toggle) return;
+  toggle.setAttribute('aria-expanded', String(open));
 }
 
 if (toggle && menu) {
   toggle.addEventListener('click', () => setMenuOpen(!isMenuOpen()));
 
+  // Escape closes the menu and returns focus to the toggle.
   document.addEventListener('keydown', (event) => {
     if (event.key === 'Escape' && isMenuOpen()) {
       setMenuOpen(false);
@@ -44,29 +49,43 @@ if (toggle && menu) {
     }
   });
 
-  // Click outside the header closes the menu.
+  // A click outside the header closes the menu (in-page links, brand included, close it below).
   document.addEventListener('click', (event) => {
     if (isMenuOpen() && !header.contains(event.target)) setMenuOpen(false);
   });
 
-  // Reaching desktop width closes the menu.
+  // Growing past the breakpoint resets the menu state.
   window.matchMedia(DESKTOP_QUERY).addEventListener('change', (event) => {
     if (event.matches) setMenuOpen(false);
   });
 }
 
-/* ---------- Scroll-spy ---------- */
+/* ---------------------------------------------------------------------------
+   2. Active section
+   The current section is the last one (in document order) whose top has
+   reached a reading line 40% down the viewport; once the page cannot scroll
+   any further the last section (the footer) is current. It is recomputed from
+   live geometry whenever an IntersectionObserver sees a section cross that
+   band and again whenever scrolling ends, so scrollbar drags and scripted
+   scrolling cannot leave a stale link behind.
+   When the visitor follows an in-page link we honour that target (sections
+   near the page end may never reach the reading line) for the scroll that the
+   link starts; any later scroll hands control back to the geometry.
+   --------------------------------------------------------------------------- */
+
+const READING_LINE = 0.4; // fraction of the viewport height, matches the observer's -60% bottom margin
+const INTENT_WINDOW_MS = 2000; // how long a link's own scroll may take to finish
 
 const sections = navLinks
   .map((link) => document.getElementById(linkTargetId(link)))
   .filter(Boolean);
 const sectionIds = new Set(sections.map((section) => section.id));
 
-let intentId = null; // section the user just asked for by clicking a link
-let intentTime = 0;
-let intentPending = false; // true until the first scroll settles after the click
+let intendedId = null;
+let intentStartedAt = 0;
+let intentScrollPending = false;
 
-function markCurrent(id) {
+function setActive(id) {
   if (!id) return;
   for (const link of navLinks) {
     if (linkTargetId(link) === id) link.setAttribute('aria-current', 'true');
@@ -74,14 +93,12 @@ function markCurrent(id) {
   }
 }
 
-function sectionFromScroll() {
+function currentSectionId() {
   if (!sections.length) return null;
   const root = document.documentElement;
-  const atPageBottom =
-    window.scrollY + window.innerHeight >= root.scrollHeight - 2 && window.scrollY > 0;
-  if (atPageBottom) return sections[sections.length - 1].id;
-
-  const line = window.innerHeight * ACTIVE_LINE;
+  const atPageEnd = window.scrollY + window.innerHeight >= root.scrollHeight - 2;
+  if (atPageEnd && window.scrollY > 0) return sections[sections.length - 1].id;
+  const line = window.innerHeight * READING_LINE;
   let current = sections[0];
   for (const section of sections) {
     if (section.getBoundingClientRect().top <= line) current = section;
@@ -89,45 +106,51 @@ function sectionFromScroll() {
   return current.id;
 }
 
-function update() {
-  markCurrent(intentId ?? sectionFromScroll());
+function updateActive() {
+  setActive(intendedId ?? currentSectionId());
 }
 
-function sectionIdFromHash(hash) {
+function targetIdFromHash(hash) {
   const id = decodeURIComponent(hash.replace(/^#/, ''));
   return sectionIds.has(id) ? id : null;
 }
 
-function setIntent(id) {
-  intentId = id;
-  intentTime = performance.now();
-  intentPending = true;
-  markCurrent(id);
+function startIntent(id) {
+  intendedId = id;
+  intentStartedAt = performance.now();
+  intentScrollPending = true;
+  setActive(id);
 }
 
-function clearIntent() {
-  if (!intentId) return;
-  intentId = null;
-  intentPending = false;
-  update();
+function releaseIntent() {
+  if (!intendedId) return;
+  intendedId = null;
+  intentScrollPending = false;
+  updateActive();
 }
 
-function onScrollSettled() {
-  const intentActive = intentId && intentPending && performance.now() - intentTime < INTENT_WINDOW_MS;
-  if (!intentActive) intentId = null;
-  intentPending = false;
-  update();
+// Called once scrolling has settled (scrollend, or a short pause in scroll events).
+function onScrollEnd() {
+  const isLinkScroll =
+    intendedId && intentScrollPending && performance.now() - intentStartedAt < INTENT_WINDOW_MS;
+  if (isLinkScroll) {
+    intentScrollPending = false; // the link's own scroll has landed; keep its target
+  } else {
+    intendedId = null; // scrollbar drag, scripted scroll, or anything else: trust the geometry
+    intentScrollPending = false;
+  }
+  updateActive();
 }
 
 if ('onscrollend' in window) {
-  window.addEventListener('scrollend', onScrollSettled);
+  window.addEventListener('scrollend', onScrollEnd);
 } else {
-  let timer;
+  let scrollTimer;
   window.addEventListener(
     'scroll',
     () => {
-      clearTimeout(timer);
-      timer = setTimeout(onScrollSettled, SCROLL_DEBOUNCE_MS);
+      clearTimeout(scrollTimer);
+      scrollTimer = setTimeout(onScrollEnd, 150);
     },
     { passive: true },
   );
@@ -135,51 +158,54 @@ if ('onscrollend' in window) {
 
 if ('IntersectionObserver' in window && sections.length) {
   const headerHeight = Math.round(header?.getBoundingClientRect().height ?? 0);
-  const sectionObserver = new IntersectionObserver(update, {
-    rootMargin: `-${headerHeight}px 0px -${100 - ACTIVE_LINE * 100}% 0px`,
+  const bandObserver = new IntersectionObserver(updateActive, {
+    rootMargin: `-${headerHeight}px 0px -${100 - READING_LINE * 100}% 0px`,
   });
-  sections.forEach((section) => sectionObserver.observe(section));
+  sections.forEach((section) => bandObserver.observe(section));
 
   const pageEnd = document.querySelector('[data-page-end]');
-  if (pageEnd) new IntersectionObserver(update).observe(pageEnd);
+  if (pageEnd) new IntersectionObserver(updateActive).observe(pageEnd);
 }
 
-// Any link click inside the header (menu links, brand, other pages) closes the menu.
+// Any link click inside the header (menu links, brand, other pages) closes the mobile menu.
 header?.addEventListener('click', (event) => {
   if (event.target.closest('a') && isMenuOpen()) setMenuOpen(false);
 });
 
-// In-page anchor clicks (menu links, brand, buttons) set the scroll-spy intent.
+// In-page links (nav, brand, hero CTA): mark the target straight away.
 document.addEventListener('click', (event) => {
-  const anchor = event.target.closest('a[href^="#"]');
-  if (!anchor) return;
-  const id = sectionIdFromHash(anchor.hash);
-  if (id) setIntent(id);
-  else clearIntent();
+  const link = event.target.closest('a[href^="#"]');
+  if (!link) return;
+  const id = targetIdFromHash(link.hash);
+  if (id) startIntent(id);
+  else releaseIntent();
 });
 
+// Back/forward through anchors, or a script setting location.hash.
 window.addEventListener('hashchange', () => {
-  const id = sectionIdFromHash(window.location.hash);
-  if (id) setIntent(id);
-  else clearIntent();
+  const id = targetIdFromHash(window.location.hash);
+  if (id) startIntent(id);
+  else releaseIntent();
 });
 
-const initialId = sectionIdFromHash(window.location.hash);
-if (initialId) setIntent(initialId);
-else update();
+// Deep link on first load (e.g. /#gallery); otherwise start from the geometry.
+const initialId = targetIdFromHash(window.location.hash);
+if (initialId) startIntent(initialId);
+else updateActive();
 
-// Manual scrolling cancels the click intent.
+// Any scrolling the visitor does themselves hands control back to the geometry.
 const SCROLL_KEYS = new Set(['ArrowUp', 'ArrowDown', 'PageUp', 'PageDown', 'Home', 'End', ' ']);
-
-window.addEventListener('wheel', clearIntent, { passive: true });
-window.addEventListener('touchmove', clearIntent, { passive: true });
+window.addEventListener('wheel', releaseIntent, { passive: true });
+window.addEventListener('touchmove', releaseIntent, { passive: true });
 window.addEventListener('keydown', (event) => {
   if (SCROLL_KEYS.has(event.key) && !event.target.closest?.('input, textarea, select, button')) {
-    clearIntent();
+    releaseIntent();
   }
 });
 
-/* ---------- Footer year ---------- */
+/* ---------------------------------------------------------------------------
+   3. Footer year
+   --------------------------------------------------------------------------- */
 
 for (const el of document.querySelectorAll('[data-year]')) {
   el.textContent = String(new Date().getFullYear());
