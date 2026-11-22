@@ -1,9 +1,13 @@
-# Saffron & Sage — restaurant landing page
+# Saffron & Sage — restaurant website
 
-A single-page landing page theme for a restaurant, built with [Vite](https://vite.dev) and plain
+A small multi-page restaurant website theme, built with [Vite](https://vite.dev) and plain
 HTML, CSS and JavaScript (ES modules). There is no framework, no router and no runtime dependency.
+It has two pages that share the same header, navigation and footer:
 
-The page has four parts, reached from a sticky navigation bar that scrolls smoothly to each one:
+- `index.html`: the scrolling landing page described below.
+- `booking.html`: the booking page with a "Book a table" request form (see [Booking page](#booking-page)).
+
+The landing page has four parts, reached from a sticky navigation bar that scrolls smoothly to each one:
 
 1. **Hero** (`#home`): the restaurant name, a tagline and two buttons: "View Gallery" and "Reserve a Table".
 2. **About us** (`#about`): the restaurant's story and what it stands for.
@@ -13,8 +17,26 @@ The page has four parts, reached from a sticky navigation bar that scrolls smoot
 All names, addresses, phone numbers and emails are **placeholders** (the email uses the reserved
 `.example` domain). Replace them before you publish.
 
-The page makes no requests to other sites: fonts come from the system font stack and every image
+The site makes no requests to other sites: fonts come from the system font stack and every image
 is served from `public/images/`.
+
+## Booking page
+
+`booking.html` (linked as "Book" in the navigation and from the hero's "Reserve a Table" button)
+holds a table-request form: name, phone, optional email, date, time, party size (1–8) and optional
+notes. The date can be today up to 60 days ahead, in the visitor's local time zone, and the time
+slots follow the opening hours (every 30 minutes, the last one an hour before closing).
+
+**There is no backend.** The form is a front-end demo only:
+
+- it has no `action` and makes no network request, so the form sends nothing anywhere;
+- nothing is stored (no cookies, `localStorage` or `sessionStorage`);
+- a valid request only shows a summary on the page, which says it is a demo and asks the guest
+  to call the restaurant to actually reserve a table.
+
+The validation, date limits and time slots live in `src/booking.js`. The opening hours there
+(`OPENING_HOURS`) must match the "Opening hours" list in the footer of every page. To take real
+bookings, connect the form to a booking service or your own server; until then, guests should call.
 
 ## Requirements
 
@@ -43,18 +65,23 @@ To deploy, run `npm run build` and upload the contents of `dist/` to any static 
 
 ```text
 .
-├── index.html              # all page markup: header/nav, hero, about, gallery, footer
+├── index.html              # landing page: header/nav, hero, about, gallery, footer
+├── booking.html            # booking page: same header/footer, client-side booking request form
+├── vite.config.js          # lists every HTML page as a build input (add new pages here)
 ├── src/
-│   ├── main.js             # mobile menu toggle, active nav link, footer year
+│   ├── main.js             # mobile menu toggle, active nav link, footer year (all pages)
+│   ├── booking.js          # booking form: date limits, time slots, validation, demo summary
 │   └── styles.css          # theme variables, layout and components (mobile-first)
 ├── public/                 # copied as-is into dist/
 │   ├── favicon.svg
 │   └── images/             # hero and dish photos
 │       └── CREDITS.md      # author, source and licence for every image
 ├── tests/
-│   └── landing.spec.js     # Playwright smoke tests (one or more per acceptance criterion)
+│   ├── landing.spec.js     # Playwright smoke tests (one or more per acceptance criterion)
+│   ├── acceptance.spec.js  # acceptance tests for the landing page
+│   └── booking.spec.js     # acceptance tests for the booking page
 ├── playwright.config.js    # runs the tests against `vite preview` on port 4173
-└── package.json            # scripts; no vite.config is needed (Vite defaults)
+└── package.json            # scripts and dev dependencies
 ```
 
 ## Theming
@@ -66,12 +93,13 @@ heading to stay readable: the tests check a contrast of at least 4.5:1.
 
 ## Editing copy
 
-All text lives in `index.html`:
+Landing-page text lives in `index.html` and booking-page text in `booking.html`. The header and
+footer are repeated in both files, so change them in both:
 
 - **Restaurant name and tagline**: the `<h1>` and `.hero__tagline` in `section#home`. Also update the
   `<title>`, the `<meta name="description">` and the `.brand` link in the header.
-- **Buttons**: "View Gallery" links to `#gallery`. "Reserve a Table" is a `tel:` link: change its
-  `href` to your phone number, a `mailto:` address or your booking page.
+- **Buttons**: "View Gallery" links to `#gallery`. "Reserve a Table" links to the booking page,
+  `/booking.html`. The phone number for real reservations is the `tel:` link in the footer.
 - **About us**: the `<h2>` and paragraphs in `section#about`, plus the three `.highlight` items.
 - **Gallery captions**: each dish's `.dish__name` and `.dish__desc` inside its `<figcaption>`.
 - **Footer**: the `<address>`, the opening hours (`<dl class="hours">`), the phone and email links and
@@ -79,8 +107,10 @@ All text lives in `index.html`:
   "Saffron & Sage on Instagram". Replace the `href="#"` with your real profile URLs.
 - The copyright year is filled in automatically by `src/main.js`.
 
-If you rename or add a section, also update its link in the header `<nav>`. The active-link
-highlighting in `src/main.js` works from those links.
+If you rename or add a section, also update its link in the header `<nav>` of both pages. The
+active-link highlighting in `src/main.js` works from those links. To add another page, create the
+HTML file at the project root, copy the header and footer, and add it to `build.rollupOptions.input`
+in `vite.config.js`, otherwise `npm run build` leaves it out.
 
 ## Swapping images
 
@@ -111,5 +141,8 @@ also links to them from the footer. Keep that attribution when you publish the s
 - A "Skip to content" link, visible keyboard focus rings and tap targets of at least 44×44 px.
 - A mobile menu button with `aria-expanded`/`aria-controls`. It closes with Escape or when you
   choose a link.
-- The current section is marked with `aria-current="true"` in the navigation.
+- The current section is marked with `aria-current="true"` in the navigation; on the booking page
+  the "Book" link carries `aria-current="page"` instead.
+- Booking form fields have visible labels; errors are shown as text next to the field, linked with
+  `aria-describedby`, and the demo summary is announced as a status message.
 - Smooth scrolling and hover animations are turned off when the visitor has "reduce motion" set.

@@ -17,6 +17,8 @@
   --color-on-dark: #fbf5ec;
   --color-on-dark-muted: #d9cdbf;
   --color-line: #e4d8c7;
+  --color-field-border: #8c7b6e; /* form control outline: 4:1 on white (non-text minimum is 3:1) */
+  --color-error: #a12a1f; /* error text: 7.3:1 on white */
 
   /* Hero overlay (the tests check white hero text against the lighter stop of the painted gradient). */
   --hero-overlay-top: rgba(20, 14, 10, 0.62);
@@ -110,6 +112,11 @@ ul {
 
 main:focus {
   outline: none;
+}
+
+/* Components set their own display; `hidden` must still win. */
+[hidden] {
+  display: none !important;
 }
 
 .container {
@@ -239,13 +246,16 @@ main:focus {
   transition: transform 0.25s var(--ease);
 }
 
+/* "true": the section in view (index.html). "page": the page you are on (booking.html). */
 .site-nav__link:hover,
-.site-nav__link[aria-current='true'] {
+.site-nav__link[aria-current='true'],
+.site-nav__link[aria-current='page'] {
   color: #ffffff;
 }
 
 .site-nav__link:hover::after,
-.site-nav__link[aria-current='true']::after {
+.site-nav__link[aria-current='true']::after,
+.site-nav__link[aria-current='page']::after {
   transform: scaleX(1);
 }
 
@@ -390,6 +400,25 @@ main:focus {
   background: #ffffff;
   color: var(--color-ink);
   transform: translateY(-2px);
+}
+
+/* Outline button for light surfaces. */
+.button--outline {
+  background: transparent;
+  color: var(--color-ink);
+  border-color: var(--color-ink);
+}
+
+.button--outline:hover {
+  background: var(--color-ink);
+  color: var(--color-on-dark);
+  transform: translateY(-2px);
+}
+
+/* <button class="button">: same font and pointer as the link buttons. */
+button.button {
+  font-family: inherit;
+  cursor: pointer;
 }
 
 /* --------------------------------------------------------------------------
@@ -611,6 +640,166 @@ main:focus {
 }
 
 /* --------------------------------------------------------------------------
+   Booking page (booking.html)
+   -------------------------------------------------------------------------- */
+
+.booking {
+  background:
+    radial-gradient(circle at 0% 0%, rgba(227, 163, 59, 0.12), transparent 40%),
+    var(--color-cream);
+}
+
+/* minmax(0, 1fr) columns: long option text or a long name must not widen the page. */
+.booking__inner {
+  --container: 40rem;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1.5rem;
+}
+
+.booking__header {
+  margin-bottom: 0.5rem;
+}
+
+.booking__notice {
+  margin: 0;
+  padding: 1rem 1.25rem;
+  background: var(--color-surface);
+  border: 1px solid var(--color-line);
+  border-left: 4px solid var(--color-sage-deep);
+  border-radius: var(--radius);
+  color: var(--color-ink);
+}
+
+.booking__notice a,
+.field__hint a {
+  white-space: nowrap;
+}
+
+/* The form only works with JavaScript; without it the notice above asks guests to call. */
+html:not(.js) .booking-form {
+  display: none;
+}
+
+.booking-form,
+.booking-result {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1.25rem;
+  padding: 1.5rem 1rem;
+  background: var(--color-surface);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+}
+
+.booking-form__legend {
+  margin: 0;
+  font-size: 0.925rem;
+  color: var(--color-ink-soft);
+}
+
+.booking-form__actions {
+  padding-top: 0.25rem;
+}
+
+.field {
+  display: grid;
+  gap: 0.4rem;
+  min-width: 0;
+}
+
+.field__label {
+  font-weight: 600;
+  color: var(--color-ink);
+}
+
+.field__flag {
+  font-size: 0.9rem;
+  font-weight: 400;
+  color: var(--color-ink-soft);
+}
+
+.field__hint {
+  margin: 0;
+  font-size: 0.925rem;
+  color: var(--color-ink-soft);
+}
+
+.field__input {
+  width: 100%;
+  min-width: 0;
+  min-height: 48px;
+  padding: 0.65rem 0.85rem;
+  font: inherit;
+  color: var(--color-ink);
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-field-border);
+  border-radius: 0.6rem;
+  /* Focused fields scroll clear of the sticky header. */
+  scroll-margin-top: calc(var(--header-h) + 1rem);
+}
+
+.field__input--textarea {
+  min-height: 7rem;
+  resize: vertical;
+}
+
+.field__input[aria-invalid='true'] {
+  border-color: var(--color-error);
+  box-shadow: inset 0 0 0 1px var(--color-error);
+}
+
+/* Errors are written out in words; the colour only repeats them. */
+.field__error {
+  margin: 0;
+  font-size: 0.925rem;
+  font-weight: 600;
+  color: var(--color-error);
+}
+
+.booking-result {
+  border-left: 4px solid var(--color-sage-deep);
+  color: var(--color-ink);
+  overflow-wrap: anywhere;
+  scroll-margin-top: calc(var(--header-h) + 1rem);
+}
+
+.booking-result p {
+  margin: 0;
+}
+
+.booking-result__title {
+  font-size: clamp(1.5rem, 4vw, 1.9rem);
+  color: var(--color-ink);
+}
+
+.booking-result__details {
+  display: grid;
+  gap: 0.35rem;
+  margin: 0;
+}
+
+.booking-result__row {
+  display: grid;
+  grid-template-columns: 5rem minmax(0, 1fr);
+  gap: 1rem;
+}
+
+.booking-result__details dt {
+  color: var(--color-ink-soft);
+}
+
+.booking-result__details dd {
+  margin: 0;
+  font-weight: 600;
+}
+
+.booking-result .button {
+  justify-self: start;
+}
+
+/* --------------------------------------------------------------------------
    Footer
    -------------------------------------------------------------------------- */
 
@@ -750,6 +939,11 @@ main:focus {
 
   .site-footer__grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .booking-form,
+  .booking-result {
+    padding: 2rem;
   }
 }
 

@@ -1,7 +1,8 @@
 /**
- * Saffron & Sage — landing page behaviour.
+ * Saffron & Sage — behaviour shared by every page (index.html, booking.html).
  *  1. Mobile navigation toggle (aria-expanded / aria-controls).
- *  2. Active nav link for the section in view (aria-current="true", exactly one).
+ *  2. Active nav link for the section in view (aria-current="true", exactly one). Pages whose
+ *     nav marks their own link with aria-current="page" (booking.html) keep that marker instead.
  *  3. Current year in the footer.
  */
 const DESKTOP_QUERY = '(min-width: 48em)'; // keep in sync with the nav breakpoint in styles.css
@@ -35,7 +36,7 @@ if (toggle && menu) {
     }
   });
 
-  // A click outside the header closes the menu (in-page links, brand included, close it below).
+  // A click outside the header closes the menu (links, brand included, close it below).
   document.addEventListener('click', (event) => {
     if (isMenuOpen() && !header.contains(event.target)) setMenuOpen(false);
   });
@@ -62,9 +63,14 @@ if (toggle && menu) {
 const READING_LINE = 0.4; // fraction of the viewport height, matches the observer's -60% bottom margin
 const INTENT_WINDOW_MS = 2000; // how long a link's own scroll may take to finish
 
-const sections = navLinks
-  .map((link) => document.getElementById(link.hash.slice(1)))
-  .filter(Boolean);
+// A page that marks its own nav link with aria-current="page" (e.g. booking.html) is not one of
+// the sections the nav points at, even though "#contact" finds its footer. Scroll-spy stays off
+// there, so it can never move or remove that marker.
+const marksOwnPage = navLinks.some((link) => link.getAttribute('aria-current') === 'page');
+
+const sections = marksOwnPage
+  ? []
+  : navLinks.map((link) => link.hash && document.getElementById(link.hash.slice(1))).filter(Boolean);
 const sectionIds = new Set(sections.map((section) => section.id));
 
 let intendedId = null;
@@ -153,11 +159,13 @@ if ('IntersectionObserver' in window && sections.length) {
   if (pageEnd) new IntersectionObserver(updateActive).observe(pageEnd);
 }
 
-// In-page links (nav, brand, hero CTA): mark the target straight away, close the mobile menu.
+// Any link closes the mobile menu (so it is not still open when the visitor comes back to this
+// page). In-page links (nav, brand, hero CTA) also mark their target straight away.
 document.addEventListener('click', (event) => {
-  const link = event.target.closest('a[href^="#"]');
+  const link = event.target.closest('a[href]');
   if (!link) return;
   if (isMenuOpen()) setMenuOpen(false);
+  if (!link.getAttribute('href').startsWith('#')) return;
   const id = targetIdFromHash(link.hash);
   if (id) startIntent(id);
   else releaseIntent();

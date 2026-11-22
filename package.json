@@ -2,7 +2,7 @@
   "name": "saffron-and-sage",
   "private": true,
   "version": "1.0.0",
-  "description": "Single-page restaurant landing page theme (Vite + vanilla HTML/CSS/JS).",
+  "description": "Restaurant website theme with a landing page and a front-end-only booking page (Vite + vanilla HTML/CSS/JS).",
   "type": "module",
   "scripts": {
     "dev": "vite",

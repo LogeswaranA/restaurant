@@ -1,0 +1,322 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Ask for a table at Saffron &amp; Sage. Choose a date, time and party size, then call us to confirm your reservation."
+    />
+    <meta name="theme-color" content="#2b211b" />
+    <title>Book a table — Saffron &amp; Sage</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <!-- Lets the CSS hide the mobile menu (and the booking form) only when JavaScript can run them. -->
+    <script>
+      document.documentElement.classList.add('js');
+    </script>
+    <link rel="stylesheet" href="/src/styles.css" />
+    <script type="module" src="/src/main.js"></script>
+    <script type="module" src="/src/booking.js"></script>
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to content</a>
+
+    <header class="site-header">
+      <div class="container site-header__inner">
+        <a class="brand" href="/#home">
+          <span class="brand__mark" aria-hidden="true"></span>
+          Saffron &amp; Sage
+        </a>
+
+        <nav class="site-nav" aria-label="Main">
+          <button
+            class="nav-toggle"
+            type="button"
+            aria-expanded="false"
+            aria-controls="primary-menu"
+          >
+            <span class="nav-toggle__bars" aria-hidden="true"></span>
+            <span class="visually-hidden">Menu</span>
+          </button>
+          <ul class="site-nav__list" id="primary-menu">
+            <li><a class="site-nav__link" href="/#home">Home</a></li>
+            <li><a class="site-nav__link" href="/#about">About</a></li>
+            <li><a class="site-nav__link" href="/#gallery">Gallery</a></li>
+            <li><a class="site-nav__link" href="#contact">Contact</a></li>
+            <!-- aria-current="page" also switches off scroll-spy in src/main.js on this page. -->
+            <li><a class="site-nav__link" href="/booking.html" aria-current="page">Book</a></li>
+          </ul>
+        </nav>
+      </div>
+    </header>
+
+    <main id="main" tabindex="-1">
+      <!-- ============ Booking request ============ -->
+      <section id="booking" class="section booking" aria-labelledby="booking-title">
+        <div class="container booking__inner">
+          <div class="section__header booking__header">
+            <p class="eyebrow">Reservations</p>
+            <h1 id="booking-title" class="section__title">Book a table</h1>
+            <p class="section__intro">
+              Tell us when you would like to join us and how many of you are coming. We seat guests
+              every 30 minutes, up to one hour before closing.
+            </p>
+          </div>
+
+          <!-- Front-end demo: this page has no backend. Nothing is sent or stored. -->
+          <p class="booking__notice">
+            <strong>Demo booking page:</strong> this form does not send your request anywhere. To
+            reserve a table, please call us on <a href="tel:+15550100">+1 (555) 0100</a>.
+          </p>
+
+          <noscript>
+            <p class="booking__notice">
+              The booking form needs JavaScript. Please call us on
+              <a href="tel:+15550100">+1 (555) 0100</a> to reserve a table.
+            </p>
+          </noscript>
+
+          <form class="booking-form" id="booking-form" novalidate aria-labelledby="booking-title">
+            <p class="booking-form__legend">Fields marked “(required)” must be filled in.</p>
+
+            <div class="field">
+              <label class="field__label" for="booking-name">Name <span class="field__flag">(required)</span></label>
+              <input
+                class="field__input"
+                id="booking-name"
+                name="name"
+                type="text"
+                autocomplete="name"
+                maxlength="80"
+                pattern=".*\S.*"
+                required
+              />
+              <p class="field__error" id="booking-name-error" hidden></p>
+            </div>
+
+            <div class="field">
+              <label class="field__label" for="booking-phone">Phone <span class="field__flag">(required)</span></label>
+              <p class="field__hint" id="booking-phone-hint">So we can reach you about your table.</p>
+              <input
+                class="field__input"
+                id="booking-phone"
+                name="phone"
+                type="tel"
+                autocomplete="tel"
+                inputmode="tel"
+                maxlength="30"
+                pattern="(?:[\s\+\-\(\)]*[0-9]){7,}[\s\+\-\(\)]*"
+                aria-describedby="booking-phone-hint"
+                required
+              />
+              <p class="field__error" id="booking-phone-error" hidden></p>
+            </div>
+
+            <div class="field">
+              <label class="field__label" for="booking-email">Email <span class="field__flag">(optional)</span></label>
+              <input
+                class="field__input"
+                id="booking-email"
+                name="email"
+                type="email"
+                autocomplete="email"
+                maxlength="254"
+              />
+              <p class="field__error" id="booking-email-error" hidden></p>
+            </div>
+
+            <div class="field">
+              <label class="field__label" for="booking-date">Date <span class="field__flag">(required)</span></label>
+              <p class="field__hint" id="booking-date-hint">From today, up to 60 days ahead.</p>
+              <input
+                class="field__input"
+                id="booking-date"
+                name="date"
+                type="date"
+                aria-describedby="booking-date-hint"
+                required
+              />
+              <p class="field__error" id="booking-date-error" hidden></p>
+            </div>
+
+            <div class="field">
+              <label class="field__label" for="booking-time">Time <span class="field__flag">(required)</span></label>
+              <p class="field__hint" id="booking-time-hint">
+                The times on offer follow our opening hours for the date you choose.
+              </p>
+              <select
+                class="field__input"
+                id="booking-time"
+                name="time"
+                aria-describedby="booking-time-hint"
+                required
+              >
+                <option value="">Choose a date first</option>
+              </select>
+              <p class="field__error" id="booking-time-error" hidden></p>
+            </div>
+
+            <div class="field">
+              <label class="field__label" for="booking-party">Party size <span class="field__flag">(required)</span></label>
+              <p class="field__hint" id="booking-party-hint">
+                For 9+ guests please call us on <a href="tel:+15550100">+1 (555) 0100</a>.
+              </p>
+              <select
+                class="field__input"
+                id="booking-party"
+                name="party"
+                aria-describedby="booking-party-hint"
+                required
+              >
+                <option value="1">1 guest</option>
+                <option value="2" selected>2 guests</option>
+                <option value="3">3 guests</option>
+                <option value="4">4 guests</option>
+                <option value="5">5 guests</option>
+                <option value="6">6 guests</option>
+                <option value="7">7 guests</option>
+                <option value="8">8 guests</option>
+              </select>
+              <p class="field__error" id="booking-party-error" hidden></p>
+            </div>
+
+            <div class="field">
+              <label class="field__label" for="booking-notes">Notes <span class="field__flag">(optional)</span></label>
+              <p class="field__hint" id="booking-notes-hint">
+                Allergies, a high chair, a special occasion… (up to 500 characters)
+              </p>
+              <textarea
+                class="field__input field__input--textarea"
+                id="booking-notes"
+                name="notes"
+                rows="4"
+                maxlength="500"
+                aria-describedby="booking-notes-hint"
+              ></textarea>
+              <p class="field__error" id="booking-notes-error" hidden></p>
+            </div>
+
+            <div class="booking-form__actions">
+              <button class="button button--primary" type="submit">Request a table</button>
+            </div>
+          </form>
+
+          <!-- Shown after a valid submit. Demo copy: it must never claim the table is reserved. -->
+          <div class="booking-result" id="booking-result" role="status" tabindex="-1" hidden>
+            <h2 class="booking-result__title">Demo only: your request has not been sent</h2>
+            <p>
+              Thanks, <span data-result="name"></span>. Here is the request you put together:
+            </p>
+            <dl class="booking-result__details">
+              <div class="booking-result__row">
+                <dt>Guests</dt>
+                <dd data-result="party"></dd>
+              </div>
+              <div class="booking-result__row">
+                <dt>Date</dt>
+                <dd data-result="date"></dd>
+              </div>
+              <div class="booking-result__row">
+                <dt>Time</dt>
+                <dd data-result="time"></dd>
+              </div>
+            </dl>
+            <p>
+              This booking page is a demo with no backend: nothing has been sent or saved, and no
+              reservation has been made. To reserve this table, please call us on
+              <a href="tel:+15550100">+1 (555) 0100</a>.
+            </p>
+            <button class="button button--outline" type="button" data-booking-again>
+              Make another request
+            </button>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- ============ Footer ============ -->
+    <footer id="contact" class="site-footer">
+      <div class="container site-footer__grid">
+        <div class="site-footer__brand">
+          <p class="site-footer__logo">Saffron &amp; Sage</p>
+          <p>Seasonal kitchen, honest flavours. Walk-ins welcome — reservations recommended at weekends.</p>
+          <ul class="social" aria-label="Social media">
+            <li>
+              <a class="social__link" href="#" aria-label="Saffron &amp; Sage on Instagram">
+                <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false">
+                  <rect x="3" y="3" width="18" height="18" rx="5" fill="none" stroke="currentColor" stroke-width="2" />
+                  <circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="2" />
+                  <circle cx="17.5" cy="6.5" r="1.2" fill="currentColor" />
+                </svg>
+              </a>
+            </li>
+            <li>
+              <a class="social__link" href="#" aria-label="Saffron &amp; Sage on Facebook">
+                <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false">
+                  <path
+                    fill="currentColor"
+                    d="M13.5 21v-7.5h2.5l.4-3h-2.9V8.6c0-.9.3-1.5 1.5-1.5h1.5V4.4c-.3 0-1.2-.1-2.2-.1-2.2 0-3.8 1.4-3.8 3.9v2.3H8v3h2.5V21h3z"
+                  />
+                </svg>
+              </a>
+            </li>
+            <li>
+              <a class="social__link" href="#" aria-label="Saffron &amp; Sage on TripAdvisor">
+                <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false">
+                  <circle cx="7" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2" />
+                  <circle cx="17" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2" />
+                  <path d="M3 8.5h18M12 8.5l-2 3M12 8.5l2 3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                </svg>
+              </a>
+            </li>
+          </ul>
+        </div>
+
+        <div>
+          <h2 class="site-footer__title">Visit us</h2>
+          <address class="site-footer__address">
+            12 Market Lane<br />
+            Riverside, CA 90000<br />
+            United States
+          </address>
+        </div>
+
+        <div>
+          <h2 class="site-footer__title">Opening hours</h2>
+          <!-- Keep in sync with OPENING_HOURS in src/booking.js (it builds the time slots). -->
+          <dl class="hours">
+            <div class="hours__row">
+              <dt>Mon – Thu</dt>
+              <dd>12:00 – 22:00</dd>
+            </div>
+            <div class="hours__row">
+              <dt>Fri – Sat</dt>
+              <dd>12:00 – 23:00</dd>
+            </div>
+            <div class="hours__row">
+              <dt>Sunday</dt>
+              <dd>11:00 – 21:00</dd>
+            </div>
+          </dl>
+        </div>
+
+        <div>
+          <h2 class="site-footer__title">Get in touch</h2>
+          <ul class="contact-list">
+            <li><a href="tel:+15550100">+1 (555) 0100</a></li>
+            <li><a href="mailto:hello@saffronandsage.example">hello@saffronandsage.example</a></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="container site-footer__bottom">
+        <p>© <span data-year></span> Saffron &amp; Sage. All rights reserved.</p>
+        <p class="site-footer__note">
+          Placeholder content for a restaurant theme ·
+          <a href="/images/CREDITS.md">Photo credits</a>
+        </p>
+      </div>
+      <div class="page-end" data-page-end aria-hidden="true"></div>
+    </footer>
+  </body>
+</html>

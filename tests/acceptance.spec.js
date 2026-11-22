@@ -85,11 +85,17 @@ test('AC-1: production build exists in dist/ and is what the test server serves'
   const distIndex = path.join(ROOT, 'dist/index.html');
   expect(existsSync(distIndex)).toBe(true);
   const built = readFileSync(distIndex, 'utf8');
-  expect(built).toMatch(/\/assets\/index-[\w-]+\.js/); // hashed bundle => real production build
+  // A hashed bundle under /assets/ means a real production build. With several HTML entries
+  // (vite.config.js), Vite names the shared chunk after its source (main-<hash>.js), not index-.
+  const HASHED_JS = /\/assets\/[\w.-]+-[\w-]{6,}\.js/;
+  expect(built).toMatch(HASHED_JS);
 
   await page.goto('/');
-  const scriptSrc = await page.locator('script[type="module"]').getAttribute('src');
-  expect(scriptSrc).toMatch(/^\/assets\/index-[\w-]+\.js$/);
+  const scriptSrc = await page.locator('script[type="module"]').first().getAttribute('src');
+  expect(scriptSrc).toMatch(new RegExp(`^${HASHED_JS.source}$`));
+  expect(built).toContain(scriptSrc); // preview serves the built dist/index.html, not the source
+  expect(existsSync(path.join(ROOT, 'dist', scriptSrc))).toBe(true);
+  expect((await page.request.get(scriptSrc)).status()).toBe(200);
 });
 
 /* ================================================================== AC-2 */
@@ -134,8 +140,10 @@ test('AC-3: single h1 "Saffron & Sage", visible tagline, View Gallery and Reserv
 
   const reserve = page.getByRole('link', { name: 'Reserve a Table', exact: true });
   await expect(reserve).toHaveCount(1);
-  expect(await reserve.getAttribute('href')).toMatch(/^(tel:|mailto:)\S+/);
+  // The hero CTA now goes to the client-side booking page; the footer keeps the phone link.
+  await expect(reserve).toHaveAttribute('href', '/booking.html');
   await expect(reserve).toBeVisible();
+  await expect(page.locator('footer#contact a[href^="tel:"]').first()).toBeVisible();
 });
 
 /* ================================================================== AC-4 */
