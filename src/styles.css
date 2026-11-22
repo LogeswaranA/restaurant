@@ -240,12 +240,14 @@ main:focus {
 }
 
 .site-nav__link:hover,
-.site-nav__link[aria-current='true'] {
+.site-nav__link[aria-current='true'],
+.site-nav__link[aria-current='page'] {
   color: #ffffff;
 }
 
 .site-nav__link:hover::after,
-.site-nav__link[aria-current='true']::after {
+.site-nav__link[aria-current='true']::after,
+.site-nav__link[aria-current='page']::after {
   transform: scaleX(1);
 }
 
@@ -799,4 +801,50 @@ main:focus {
   .dish:hover .dish__media img {
     transform: none;
   }
+}
+
+.about__more {
+  margin-top: 1.5rem;
+}
+
+.about-page__narrow {
+  max-width: 46rem;
+}
+
+.about-intro {
+  background: radial-gradient(circle at 100% 0%, #8fae8b2e, transparent 45%), var(--color-cream);
+  padding-bottom: 2rem;
+}
+
+.about-page__lead {
+  color: var(--color-ink-soft);
+  font-size: 1.15rem;
+}
+
+.about-vision,.about-mission {
+  background: var(--color-cream);
+  padding: 2rem 0;
+}
+
+.about-mission {
+  padding-bottom: 4.5rem;
+}
+
+.about-page__vision {
+  font-family: var(--font-display);
+  color: var(--color-sage-deep);
+  font-size: clamp(1.35rem,3.5vw,1.85rem);
+  line-height: 1.4;
+}
+
+.about-mission__list {
+  gap: 1rem;
+  padding: 0;
+  list-style: none;
+  display: grid;
+}
+
+.about-mission__list .highlight {
+  color: var(--color-ink);
+  font-size: 1.05rem;
 }

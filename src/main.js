@@ -9,7 +9,21 @@ const DESKTOP_QUERY = '(min-width: 48em)'; // keep in sync with the nav breakpoi
 const header = document.querySelector('.site-header');
 const toggle = document.querySelector('.nav-toggle');
 const menu = toggle && document.getElementById(toggle.getAttribute('aria-controls'));
-const navLinks = Array.from(document.querySelectorAll('.site-nav__link'));
+const allNavLinks = Array.from(document.querySelectorAll('.site-nav__link'));
+// A link marked aria-current="page" means this page is not the one-page scroller: no scroll-spy.
+const isSpyPage = !allNavLinks.some((link) => link.getAttribute('aria-current') === 'page');
+
+// Section a nav link stands for on this page, or null. `data-section` names a section whose
+// link points at another page (the home "About" link); otherwise only pure hash links count.
+function linkTargetId(link) {
+  if (link.dataset.section) return link.dataset.section;
+  const pureHash = link.getAttribute('href').startsWith('#');
+  return pureHash && link.hash ? link.hash.slice(1) : null;
+}
+
+const navLinks = isSpyPage
+  ? allNavLinks.filter((link) => document.getElementById(linkTargetId(link) ?? ''))
+  : [];
 
 /* ---------------------------------------------------------------------------
    1. Mobile navigation
@@ -63,7 +77,7 @@ const READING_LINE = 0.4; // fraction of the viewport height, matches the observ
 const INTENT_WINDOW_MS = 2000; // how long a link's own scroll may take to finish
 
 const sections = navLinks
-  .map((link) => document.getElementById(link.hash.slice(1)))
+  .map((link) => document.getElementById(linkTargetId(link)))
   .filter(Boolean);
 const sectionIds = new Set(sections.map((section) => section.id));
 
@@ -74,7 +88,7 @@ let intentScrollPending = false;
 function setActive(id) {
   if (!id) return;
   for (const link of navLinks) {
-    if (link.hash === `#${id}`) link.setAttribute('aria-current', 'true');
+    if (linkTargetId(link) === id) link.setAttribute('aria-current', 'true');
     else link.removeAttribute('aria-current');
   }
 }
@@ -153,11 +167,15 @@ if ('IntersectionObserver' in window && sections.length) {
   if (pageEnd) new IntersectionObserver(updateActive).observe(pageEnd);
 }
 
-// In-page links (nav, brand, hero CTA): mark the target straight away, close the mobile menu.
+// Any link click inside the header (menu links, brand, other pages) closes the mobile menu.
+header?.addEventListener('click', (event) => {
+  if (event.target.closest('a') && isMenuOpen()) setMenuOpen(false);
+});
+
+// In-page links (nav, brand, hero CTA): mark the target straight away.
 document.addEventListener('click', (event) => {
   const link = event.target.closest('a[href^="#"]');
   if (!link) return;
-  if (isMenuOpen()) setMenuOpen(false);
   const id = targetIdFromHash(link.hash);
   if (id) startIntent(id);
   else releaseIntent();

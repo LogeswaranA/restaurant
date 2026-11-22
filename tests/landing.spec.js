@@ -13,7 +13,8 @@ const VIEWPORTS = {
   desktop: { width: 1280, height: 720 },
 };
 
-const NAV_TARGETS = ['#home', '#about', '#gallery', '#contact'];
+// About is a page link (/about.html); the home About section is still scroll-spied via data-section.
+const NAV_TARGETS = ['#home', '/about.html', '#gallery', '#contact'];
 
 /** Resolves once the window has stopped scrolling (smooth scroll finished). */
 async function waitForScrollEnd(page) {
@@ -256,12 +257,15 @@ test.describe('Navigation', () => {
         .evaluateAll((links) =>
           links
             .filter((a) => a.getAttribute('aria-current') === 'true' || a.classList.contains('active'))
-            .map((a) => a.getAttribute('href')),
+            .map((a) => (a.dataset.section ? `#${a.dataset.section}` : a.getAttribute('href'))),
         );
 
     await expect.poll(activeHrefs).toEqual(['#home']);
 
-    await navLink(page, 'About').click();
+    // The About nav link opens /about.html, so reach the About section by hash.
+    await page.evaluate(() => {
+      window.location.hash = '#about';
+    });
     await waitForScrollEnd(page);
     await expect.poll(activeHrefs).toEqual(['#about']);
 
@@ -310,10 +314,10 @@ test.describe('Navigation', () => {
       await expect(navLink(page, name)).toBeVisible();
     }
 
-    await navLink(page, 'About').click();
+    await navLink(page, 'Gallery').click();
     await expect(toggle).toHaveAttribute('aria-expanded', 'false');
-    await expect(navLink(page, 'About')).toBeHidden();
-    await expect(page).toHaveURL(/#about$/);
+    await expect(navLink(page, 'Gallery')).toBeHidden();
+    await expect(page).toHaveURL(/#gallery$/);
   });
 
   test('AC-10: tapping the brand link closes the open mobile menu', async ({ page }) => {
@@ -347,7 +351,7 @@ test.describe('Navigation', () => {
     await page.setViewportSize(VIEWPORTS.desktop);
     await page.goto('/');
     const activeHrefs = () =>
-      page.locator('header nav a[aria-current="true"]').evaluateAll((links) => links.map((a) => a.hash));
+      page.locator('header nav a[aria-current="true"]').evaluateAll((links) => links.map((a) => (a.dataset.section ? `#${a.dataset.section}` : a.hash)));
 
     await navLink(page, 'Gallery').click();
     await waitForScrollEnd(page);
