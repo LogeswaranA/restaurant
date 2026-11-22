@@ -67,6 +67,20 @@ test.describe('About page navigation (desktop)', () => {
     await expect(link('About')).toHaveAttribute('aria-current', 'page');
   });
 
+  test('current page link is styled differently from other links', async ({ page }) => {
+    await page.goto('/about.html');
+    await page.mouse.move(0, 400);
+    const style = (name) =>
+      page.locator('.site-nav__link', { hasText: name }).evaluate((el) => ({
+        color: getComputedStyle(el).color,
+        line: getComputedStyle(el, '::after').transform,
+      }));
+    const about = await style('About');
+    const gallery = await style('Gallery');
+    expect(about.color).not.toBe(gallery.color);
+    expect(about.line).not.toBe(gallery.line);
+  });
+
   test('AC-4 About from the home nav lands on /about.html', async ({ page }) => {
     await page.goto('/');
     await expect(page.locator('.site-nav__link', { hasText: 'About' })).toHaveAttribute('href', '/about.html');
@@ -139,6 +153,16 @@ test.describe('mobile menu (375px)', () => {
     await toggle.click();
     await page.locator('.site-nav__link', { hasText: 'About' }).click();
     await expect(toggle).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  test('AC-5 Contact hash link closes the menu without reloading', async ({ page }) => {
+    await page.goto('/about.html');
+    const toggle = page.locator('.nav-toggle');
+    await toggle.click();
+    await expect(toggle).toHaveAttribute('aria-expanded', 'true');
+    await page.locator('.site-nav__link', { hasText: 'Contact' }).click();
+    await expect(toggle).toHaveAttribute('aria-expanded', 'false');
+    await expect(page).toHaveURL(/\/about\.html#contact$/);
   });
 
   test('AC-5 resizing to desktop closes the menu', async ({ page }) => {

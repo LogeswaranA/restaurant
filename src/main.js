@@ -13,13 +13,11 @@ const allNavLinks = Array.from(document.querySelectorAll('.site-nav__link'));
 const isSpyPage = !allNavLinks.some((link) => link.getAttribute('aria-current') === 'page');
 
 // Section a nav link stands for on this page, or null. `data-section` names a section whose
-// link points at another page (the home "About" link); otherwise pure hash links count, and
-// so do links to the current path.
+// link points at another page (the home "About" link); otherwise only pure hash links count.
 function linkTargetId(link) {
   if (link.dataset.section) return link.dataset.section;
-  const samePage = !link.getAttribute('href').startsWith('#') && link.pathname === window.location.pathname;
   const pureHash = link.getAttribute('href').startsWith('#');
-  return (pureHash || samePage) && link.hash ? link.hash.slice(1) : null;
+  return pureHash && link.hash ? link.hash.slice(1) : null;
 }
 
 const navLinks = isSpyPage
