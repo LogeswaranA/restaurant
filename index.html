@@ -1,0 +1,311 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Saffron &amp; Sage — a seasonal neighbourhood kitchen serving honest, flavourful food. See our dishes, opening hours and how to reserve a table."
+    />
+    <meta name="theme-color" content="#2b211b" />
+    <title>Saffron &amp; Sage — Seasonal kitchen, honest flavours</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <!-- Lets the CSS hide the mobile menu only when JavaScript can open it again. -->
+    <script>
+      document.documentElement.classList.add('js');
+    </script>
+    <link rel="stylesheet" href="/src/styles.css" />
+    <script type="module" src="/src/main.js"></script>
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to content</a>
+
+    <header class="site-header">
+      <div class="container site-header__inner">
+        <a class="brand" href="#home">
+          <span class="brand__mark" aria-hidden="true"></span>
+          Saffron &amp; Sage
+        </a>
+
+        <nav class="site-nav" aria-label="Main">
+          <button
+            class="nav-toggle"
+            type="button"
+            aria-expanded="false"
+            aria-controls="primary-menu"
+          >
+            <span class="nav-toggle__bars" aria-hidden="true"></span>
+            <span class="visually-hidden">Menu</span>
+          </button>
+          <ul class="site-nav__list" id="primary-menu">
+            <li><a class="site-nav__link" href="#home">Home</a></li>
+            <li><a class="site-nav__link" href="#about">About</a></li>
+            <li><a class="site-nav__link" href="#gallery">Gallery</a></li>
+            <li><a class="site-nav__link" href="#contact">Contact</a></li>
+          </ul>
+        </nav>
+      </div>
+    </header>
+
+    <main id="main" tabindex="-1">
+      <!-- ============ Hero ============ -->
+      <section id="home" class="hero" aria-labelledby="hero-title">
+        <div class="container hero__content">
+          <p class="hero__eyebrow">Est. 2012 · Riverside</p>
+          <h1 id="hero-title" class="hero__title">Saffron &amp; Sage</h1>
+          <p class="hero__tagline">Seasonal kitchen, honest flavours</p>
+          <div class="hero__actions">
+            <a class="button button--primary" href="#gallery">View Gallery</a>
+            <a class="button button--ghost" href="tel:+15550100">Reserve a Table</a>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ About ============ -->
+      <section id="about" class="section about" aria-labelledby="about-title">
+        <div class="container about__grid">
+          <div class="about__text">
+            <p class="eyebrow">Our story</p>
+            <h2 id="about-title" class="section__title">Cooking with the seasons</h2>
+            <p>
+              Saffron &amp; Sage began as a twelve-seat kitchen with one simple idea: cook what
+              the season gives us, and cook it well. Today our menu still changes with the
+              market, built around produce from nearby farms, fish landed the same morning and
+              bread baked in-house every day.
+            </p>
+            <p>
+              Our chefs keep things honest — a handful of good ingredients, open-fire cooking
+              and a generous pinch of saffron where it belongs. Whether you drop in for a quick
+              lunch or settle in for a long dinner with friends, we want every plate to feel like
+              it was made just for you.
+            </p>
+          </div>
+
+          <ul class="about__highlights" aria-label="What we stand for">
+            <li class="highlight">
+              <span class="highlight__value">Local</span>
+              <span class="highlight__label">Produce from farms within 50 miles</span>
+            </li>
+            <li class="highlight">
+              <span class="highlight__value">Seasonal</span>
+              <span class="highlight__label">A menu that changes every month</span>
+            </li>
+            <li class="highlight">
+              <span class="highlight__value">Fire</span>
+              <span class="highlight__label">Breads and mains from our wood oven</span>
+            </li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- ============ Gallery ============ -->
+      <section id="gallery" class="section gallery" aria-labelledby="gallery-title">
+        <div class="container">
+          <div class="section__header">
+            <p class="eyebrow">From our kitchen</p>
+            <h2 id="gallery-title" class="section__title">A taste of the menu</h2>
+            <p class="section__intro">
+              A few of the plates our guests come back for. The menu follows the seasons, so
+              expect a few surprises when you visit.
+            </p>
+          </div>
+
+          <ul class="gallery__grid">
+            <li>
+              <figure class="dish">
+                <div class="dish__media">
+                  <img
+                    src="/images/tomato-basil-bruschetta.jpg"
+                    alt="Toasted bread slices topped with chopped tomatoes and fresh basil"
+                    width="960"
+                    height="640"
+                    loading="lazy"
+                    decoding="async"
+                  />
+                </div>
+                <figcaption class="dish__caption">
+                  <span class="dish__name">Tomato &amp; basil bruschetta</span>
+                  <span class="dish__desc">Grilled sourdough, vine tomatoes, garden basil</span>
+                </figcaption>
+              </figure>
+            </li>
+            <li>
+              <figure class="dish">
+                <div class="dish__media">
+                  <img
+                    src="/images/caprese-salad.jpg"
+                    alt="Caprese salad of sliced tomatoes, mozzarella and basil leaves"
+                    width="960"
+                    height="640"
+                    loading="lazy"
+                    decoding="async"
+                  />
+                </div>
+                <figcaption class="dish__caption">
+                  <span class="dish__name">Insalata caprese</span>
+                  <span class="dish__desc">Buffalo mozzarella, heirloom tomatoes, olive oil</span>
+                </figcaption>
+              </figure>
+            </li>
+            <li>
+              <figure class="dish">
+                <div class="dish__media">
+                  <img
+                    src="/images/pumpkin-soup.jpg"
+                    alt="Creamy pumpkin soup with a swirl of cream and chopped herbs in a white cup"
+                    width="960"
+                    height="639"
+                    loading="lazy"
+                    decoding="async"
+                  />
+                </div>
+                <figcaption class="dish__caption">
+                  <span class="dish__name">Roasted pumpkin soup</span>
+                  <span class="dish__desc">Velvety pumpkin, cream, fresh herbs</span>
+                </figcaption>
+              </figure>
+            </li>
+            <li>
+              <figure class="dish">
+                <div class="dish__media">
+                  <img
+                    src="/images/seared-salmon.jpg"
+                    alt="Seared salmon in a rich brown sauce with grilled potatoes, greens and dill"
+                    width="960"
+                    height="639"
+                    loading="lazy"
+                    decoding="async"
+                  />
+                </div>
+                <figcaption class="dish__caption">
+                  <span class="dish__name">Pan-seared salmon</span>
+                  <span class="dish__desc">Grilled potatoes, greens, brown butter &amp; dill</span>
+                </figcaption>
+              </figure>
+            </li>
+            <li>
+              <figure class="dish">
+                <div class="dish__media">
+                  <img
+                    src="/images/ribeye-steak.jpg"
+                    alt="Angus ribeye steak with red potatoes and roasted cauliflower, served with red wine"
+                    width="960"
+                    height="643"
+                    loading="lazy"
+                    decoding="async"
+                  />
+                </div>
+                <figcaption class="dish__caption">
+                  <span class="dish__name">Wood-fired ribeye</span>
+                  <span class="dish__desc">Angus beef, parsley potatoes, roasted cauliflower</span>
+                </figcaption>
+              </figure>
+            </li>
+            <li>
+              <figure class="dish">
+                <div class="dish__media">
+                  <img
+                    src="/images/tiramisu.jpg"
+                    alt="A serving of layered tiramisu dusted with cocoa"
+                    width="960"
+                    height="720"
+                    loading="lazy"
+                    decoding="async"
+                  />
+                </div>
+                <figcaption class="dish__caption">
+                  <span class="dish__name">Classic tiramisu</span>
+                  <span class="dish__desc">Espresso-soaked savoiardi, mascarpone, cocoa</span>
+                </figcaption>
+              </figure>
+            </li>
+          </ul>
+        </div>
+      </section>
+    </main>
+
+    <!-- ============ Footer ============ -->
+    <footer id="contact" class="site-footer">
+      <div class="container site-footer__grid">
+        <div class="site-footer__brand">
+          <p class="site-footer__logo">Saffron &amp; Sage</p>
+          <p>Seasonal kitchen, honest flavours. Walk-ins welcome — reservations recommended at weekends.</p>
+          <ul class="social" aria-label="Social media">
+            <li>
+              <a class="social__link" href="#" aria-label="Saffron &amp; Sage on Instagram">
+                <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false">
+                  <rect x="3" y="3" width="18" height="18" rx="5" fill="none" stroke="currentColor" stroke-width="2" />
+                  <circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="2" />
+                  <circle cx="17.5" cy="6.5" r="1.2" fill="currentColor" />
+                </svg>
+              </a>
+            </li>
+            <li>
+              <a class="social__link" href="#" aria-label="Saffron &amp; Sage on Facebook">
+                <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false">
+                  <path
+                    fill="currentColor"
+                    d="M13.5 21v-7.5h2.5l.4-3h-2.9V8.6c0-.9.3-1.5 1.5-1.5h1.5V4.4c-.3 0-1.2-.1-2.2-.1-2.2 0-3.8 1.4-3.8 3.9v2.3H8v3h2.5V21h3z"
+                  />
+                </svg>
+              </a>
+            </li>
+            <li>
+              <a class="social__link" href="#" aria-label="Saffron &amp; Sage on TripAdvisor">
+                <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false">
+                  <circle cx="7" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2" />
+                  <circle cx="17" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2" />
+                  <path d="M3 8.5h18M12 8.5l-2 3M12 8.5l2 3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                </svg>
+              </a>
+            </li>
+          </ul>
+        </div>
+
+        <div>
+          <h2 class="site-footer__title">Visit us</h2>
+          <address class="site-footer__address">
+            12 Market Lane<br />
+            Riverside, CA 90000<br />
+            United States
+          </address>
+        </div>
+
+        <div>
+          <h2 class="site-footer__title">Opening hours</h2>
+          <dl class="hours">
+            <div class="hours__row">
+              <dt>Mon – Thu</dt>
+              <dd>12:00 – 22:00</dd>
+            </div>
+            <div class="hours__row">
+              <dt>Fri – Sat</dt>
+              <dd>12:00 – 23:00</dd>
+            </div>
+            <div class="hours__row">
+              <dt>Sunday</dt>
+              <dd>11:00 – 21:00</dd>
+            </div>
+          </dl>
+        </div>
+
+        <div>
+          <h2 class="site-footer__title">Get in touch</h2>
+          <ul class="contact-list">
+            <li><a href="tel:+15550100">+1 (555) 0100</a></li>
+            <li><a href="mailto:hello@saffronandsage.example">hello@saffronandsage.example</a></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="container site-footer__bottom">
+        <p>© <span data-year></span> Saffron &amp; Sage. All rights reserved.</p>
+        <p class="site-footer__note">
+          Placeholder content for a restaurant theme ·
+          <a href="/images/CREDITS.md">Photo credits</a>
+        </p>
+      </div>
+      <div class="page-end" data-page-end aria-hidden="true"></div>
+    </footer>
+  </body>
+</html>
