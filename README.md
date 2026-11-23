@@ -12,7 +12,9 @@ The landing page has four parts, reached from a sticky navigation bar that scrol
 1. **Hero** (`#home`): the restaurant name, a tagline and two buttons: "View Gallery" and "Reserve a Table".
 2. **About us** (`#about`): the restaurant's story and what it stands for.
 3. **Gallery** (`#gallery`): a responsive grid of dish photos (1 column on phones, 2 on tablets, 3 on desktops).
-4. **Footer** (`#contact`): address, opening hours, phone, email, social links and copyright.
+4. **Feedback** (`#feedback`): a static Feedback section with three placeholder guest testimonials
+   (no form, no navigation link). Replace the quotes in `index.html` with real feedback.
+5. **Footer** (`#contact`): address, opening hours, phone, email, social links and copyright.
 
 All names, addresses, phone numbers and emails are **placeholders** (the email uses the reserved
 `.example` domain). Replace them before you publish.
