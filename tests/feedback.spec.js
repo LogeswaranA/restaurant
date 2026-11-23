@@ -74,20 +74,23 @@ test('AC-3: no interactive controls in #feedback and the nav has no feedback lin
 test('AC-4: cards stack at 375px without overflow and sit side by side at 1280px', async ({ page }) => {
   await page.setViewportSize({ width: 375, height: 800 });
   await page.goto('/');
-  const tops = () =>
+  const lefts = () =>
     page.locator('#feedback .testimonial').evaluateAll((els) =>
       els.map((el) => Math.round(el.getBoundingClientRect().left)),
     );
-  expect(new Set(await tops()).size).toBe(1);
+  expect(new Set(await lefts()).size).toBe(1);
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth);
   expect(overflow).toBe(true);
+
+  await page.setViewportSize({ width: 768, height: 900 });
+  expect(new Set(await lefts()).size).toBe(1);
 
   await page.setViewportSize({ width: 1280, height: 800 });
   const ys = await page
     .locator('#feedback .testimonial')
     .evaluateAll((els) => els.map((el) => Math.round(el.getBoundingClientRect().top + window.scrollY)));
   expect(new Set(ys).size).toBe(1);
-  expect(new Set(await tops()).size).toBe(3);
+  expect(new Set(await lefts()).size).toBe(3);
 });
 
 test('AC-5: feedback text has at least 4.5:1 contrast on its background', async ({ page }) => {

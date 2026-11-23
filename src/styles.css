@@ -1002,10 +1002,6 @@ html:not(.js) .booking-form {
     padding: 6rem 0;
   }
 
-  .feedback__grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-
   .about__grid {
     grid-template-columns: 3fr 2fr;
     gap: 4rem;
@@ -1013,6 +1009,10 @@ html:not(.js) .booking-form {
 }
 
 @media (min-width: 64em) {
+  .feedback__grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
   .gallery__grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 2rem;
