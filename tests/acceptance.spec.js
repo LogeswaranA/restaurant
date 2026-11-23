@@ -111,14 +111,18 @@ test('AC-2: header nav, main with home/about/gallery sections in order, then foo
   await expect(page.locator('footer#contact')).toHaveCount(1);
 
   const order = await page.evaluate(() => {
-    const els = ['section#home', 'section#about', 'section#gallery', 'footer#contact'].map((s) =>
-      document.querySelector(s),
-    );
+    const els = [
+      'section#home',
+      'section#about',
+      'section#gallery',
+      'section#feedback',
+      'footer#contact',
+    ].map((s) => document.querySelector(s));
     const follows = (a, b) => !!(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING);
     return {
       ordered: els.every((el, i) => i === 0 || follows(els[i - 1], el)),
-      footerOutsideMain: !document.querySelector('main').contains(els[3]),
-      footerAfterMain: follows(document.querySelector('main'), els[3]),
+      footerOutsideMain: !document.querySelector('main').contains(els[4]),
+      footerAfterMain: follows(document.querySelector('main'), els[4]),
     };
   });
   expect(order).toEqual({ ordered: true, footerOutsideMain: true, footerAfterMain: true });

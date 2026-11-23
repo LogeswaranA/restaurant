@@ -82,6 +82,7 @@ test.describe('Structure & content', () => {
       'section#home:main',
       'section#about:main',
       'section#gallery:main',
+      'section#feedback:main',
       'footer#contact:body',
     ]);
 
