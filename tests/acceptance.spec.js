@@ -114,6 +114,7 @@ test('AC-2: header nav, main with home/about/gallery sections in order, then foo
     const els = [
       'section#home',
       'section#about',
+      'section#founders',
       'section#gallery',
       'section#feedback',
       'footer#contact',
@@ -121,8 +122,8 @@ test('AC-2: header nav, main with home/about/gallery sections in order, then foo
     const follows = (a, b) => !!(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING);
     return {
       ordered: els.every((el, i) => i === 0 || follows(els[i - 1], el)),
-      footerOutsideMain: !document.querySelector('main').contains(els[4]),
-      footerAfterMain: follows(document.querySelector('main'), els[4]),
+      footerOutsideMain: !document.querySelector('main').contains(els[els.length - 1]),
+      footerAfterMain: follows(document.querySelector('main'), els[els.length - 1]),
     };
   });
   expect(order).toEqual({ ordered: true, footerOutsideMain: true, footerAfterMain: true });
