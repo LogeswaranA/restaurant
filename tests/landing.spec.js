@@ -81,6 +81,7 @@ test.describe('Structure & content', () => {
     expect(order).toEqual([
       'section#home:main',
       'section#about:main',
+      'section#founders:main',
       'section#gallery:main',
       'section#feedback:main',
       'footer#contact:body',
