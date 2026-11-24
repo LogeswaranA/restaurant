@@ -63,10 +63,11 @@
             </p>
           </div>
 
-          <!-- Front-end demo: this page has no backend. Nothing is sent or stored. -->
+          <!-- Requests are saved by the bookings API (server/); they are not reservations until the restaurant confirms by phone. -->
           <p class="booking__notice">
-            <strong>Demo booking page:</strong> this form does not send your request anywhere. To
-            reserve a table, please call us on <a href="tel:+15550100">+1 (555) 0100</a>.
+            <strong>Booking requests:</strong> this form sends your request to the restaurant, where
+            it is saved. A request is not a reservation: to be sure of your table, please call us on
+            <a href="tel:+15550100">+1 (555) 0100</a>.
           </p>
 
           <noscript>
@@ -197,13 +198,14 @@
             </div>
 
             <div class="booking-form__actions">
+              <p class="field__error booking-form__error" id="booking-submit-error" role="alert" hidden></p>
               <button class="button button--primary" type="submit">Request a table</button>
             </div>
           </form>
 
-          <!-- Shown after a valid submit. Demo copy: it must never claim the table is reserved. -->
+          <!-- Shown after the API saved the request (201). It must never claim the table is reserved. -->
           <div class="booking-result" id="booking-result" role="status" tabindex="-1" hidden>
-            <h2 class="booking-result__title">Demo only: your request has not been sent</h2>
+            <h2 class="booking-result__title">Request received: we have saved your request</h2>
             <p>
               Thanks, <span data-result="name"></span>. Here is the request you put together:
             </p>
@@ -222,9 +224,8 @@
               </div>
             </dl>
             <p>
-              This booking page is a demo with no backend: nothing has been sent or saved, and no
-              reservation has been made. To reserve this table, please call us on
-              <a href="tel:+15550100">+1 (555) 0100</a>.
+              Your request has been saved. It is not a reservation yet: to be sure of your table,
+              please call us on <a href="tel:+15550100">+1 (555) 0100</a>.
             </p>
             <button class="button button--outline" type="button" data-booking-again>
               Make another request

@@ -32,20 +32,44 @@ holds a table-request form: name, phone, optional email, date, time, party size 
 notes. The date can be today up to 60 days ahead, in the visitor's local time zone, and the time
 slots follow the opening hours (every 30 minutes, the last one an hour before closing).
 
-**There is no backend.** The form is a front-end demo only:
+Valid requests are saved by a small Node API backed by SQLite:
 
-- it has no `action` and makes no network request, so the form sends nothing anywhere;
-- nothing is stored (no cookies, `localStorage` or `sessionStorage`);
-- a valid request only shows a summary on the page, which says it is a demo and asks the guest
-  to call the restaurant to actually reserve a table.
+- the form POSTs JSON to `/api/bookings` with `fetch` (no page navigation). The page shows its
+  summary only after the API answers `201`; on a network error or a server error it shows
+  "Could not save your booking, please try again" and keeps everything the guest typed;
+- the API (`server/`) validates every field again with the same rules as the page
+  (`src/booking-rules.js`) and inserts the row with parameterised queries. It exposes only
+  `POST /api/bookings` and `GET /api/health`: there is no endpoint to list or read bookings;
+- the browser itself stores nothing (no cookies, `localStorage` or `sessionStorage`);
+- a saved request is not a reservation: the summary asks the guest to call the restaurant.
 
-The validation, date limits and time slots live in `src/booking.js`. The opening hours there
-(`OPENING_HOURS`) must match the "Opening hours" list in the footer of every page. To take real
-bookings, connect the form to a booking service or your own server; until then, guests should call.
+### Storage (SQLite)
+
+Bookings go into one table, `bookings`, in a SQLite file using Node's built-in `node:sqlite`
+module (no extra dependency; it needs Node 22.13+).
+
+| Variable | Default | Meaning |
+| --- | --- | --- |
+| `BOOKINGS_DB_PATH` | `data/bookings.db` | Path of the SQLite file. The folder is created if missing. |
+| `PORT` | `8787` | Port of the API, which listens on `127.0.0.1` only. |
+| `TZ` | system time zone | Set it to the restaurant's time zone: the API applies the date window and the time slots in its own local time. |
+
+- `npm run start:api` starts the API alone. `npm run dev` starts the API and the Vite dev server together.
+- `npm run preview` (and `npm test`) proxy `/api` to the API, so the API must be running for bookings
+  to be saved from a preview.
+- To deploy, serve `dist/` as static files and run the API (`npm run start:api`) behind the same
+  host, with your web server forwarding `/api` to it.
+- **The database holds personal data** (name, phone, email, notes). `data/` and `*.db` are
+  git-ignored: never commit them, back them up and delete them according to your privacy rules.
+  The API does not log request bodies.
+
+The validation, date limits and time slots live in `src/booking-rules.js` (shared by the page and
+the API). The opening hours there (`OPENING_HOURS`) must match the "Opening hours" list in the
+footer of every page.
 
 ## Requirements
 
-- Node.js 20.19+ or 22.12+ (needed by Vite 8)
+- Node.js 22.13+ (needed by `node:sqlite`; Vite 8 itself needs 20.19+ or 22.12+)
 - npm
 
 ## Getting started
@@ -59,12 +83,14 @@ npx playwright install chromium  # one-off: download the browser the tests use
 
 | Command | What it does |
 | --- | --- |
-| `npm run dev` | Starts the Vite dev server with hot reload at <http://localhost:5173>. |
+| `npm run dev` | Starts the bookings API (port 8787) and the Vite dev server with hot reload at <http://localhost:5173>, which proxies `/api`. |
+| `npm run dev:web` | Starts only the Vite dev server (bookings cannot be saved without the API). |
+| `npm run start:api` | Starts only the bookings API on `127.0.0.1:8787`, storing to `BOOKINGS_DB_PATH`. |
 | `npm run build` | Builds the production site into `dist/`. |
 | `npm run preview` | Serves the built `dist/` folder locally to check the production build. |
-| `npm test` | Builds the site, serves it with `vite preview` on port 4173 and runs the Playwright smoke tests in Chromium. |
+| `npm test` | Builds the site, starts the API (port 8787, test database a fresh per-run file in the OS temp folder), serves the site with `vite preview` on port 4173 and runs the Playwright tests in Chromium. Both ports must be free. |
 
-To deploy, run `npm run build` and upload the contents of `dist/` to any static host.
+To deploy, run `npm run build`, upload `dist/` to a host and run the API behind `/api` (see [Storage (SQLite)](#storage-sqlite)).
 
 ## Project structure
 
@@ -72,10 +98,16 @@ To deploy, run `npm run build` and upload the contents of `dist/` to any static 
 .
 ├── index.html              # landing page: header/nav, hero, about, gallery, footer
 ├── booking.html            # booking page: same header/footer, client-side booking request form
-├── vite.config.js          # lists every HTML page as a build input (add new pages here)
+├── vite.config.js          # lists every HTML page as a build input (add new pages here); proxies /api
+├── server/
+│   ├── index.js            # bookings API entry point (node:http, 127.0.0.1:8787)
+│   ├── app.js              # routes, body limits, validation, safe error responses
+│   └── db.js               # SQLite file (node:sqlite), schema and the parameterised insert
+├── scripts/dev.js          # `npm run dev`: starts the API and Vite together
 ├── src/
 │   ├── main.js             # mobile menu toggle, active nav link, footer year (all pages)
-│   ├── booking.js          # booking form: date limits, time slots, validation, demo summary
+│   ├── booking.js          # booking form: validation, POST to /api/bookings, summary
+│   ├── booking-rules.js    # opening hours, date window, slots and validation shared with the API
 │   └── styles.css          # theme variables, layout and components (mobile-first)
 ├── public/                 # copied as-is into dist/
 │   ├── favicon.svg
@@ -84,8 +116,9 @@ To deploy, run `npm run build` and upload the contents of `dist/` to any static 
 ├── tests/
 │   ├── landing.spec.js     # Playwright smoke tests (one or more per acceptance criterion)
 │   ├── acceptance.spec.js  # acceptance tests for the landing page
-│   └── booking.spec.js     # acceptance tests for the booking page
-├── playwright.config.js    # runs the tests against `vite preview` on port 4173
+│   ├── booking.spec.js     # acceptance tests for the booking page
+│   └── booking-submit.spec.js # booking submit flow: real API + SQLite, errors, double click
+├── playwright.config.js    # starts the API and `vite preview` (port 4173) for the tests
 └── package.json            # scripts and dev dependencies
 ```
 
@@ -149,5 +182,5 @@ also links to them from the footer. Keep that attribution when you publish the s
 - The current section is marked with `aria-current="true"` in the navigation; on the booking page
   the "Book" link carries `aria-current="page"` instead.
 - Booking form fields have visible labels; errors are shown as text next to the field, linked with
-  `aria-describedby`, and the demo summary is announced as a status message.
+  `aria-describedby`, and the saved-request summary is announced as a status message.
 - Smooth scrolling and hover animations are turned off when the visitor has "reduce motion" set.

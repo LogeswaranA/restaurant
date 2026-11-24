@@ -2,10 +2,15 @@
   "name": "saffron-and-sage",
   "private": true,
   "version": "1.0.0",
-  "description": "Restaurant website theme with a landing page and a front-end-only booking page (Vite + vanilla HTML/CSS/JS).",
+  "description": "Restaurant website theme with a landing page and a booking page that stores requests in SQLite through a small Node API (Vite + vanilla HTML/CSS/JS).",
   "type": "module",
+  "engines": {
+    "node": ">=22.13"
+  },
   "scripts": {
-    "dev": "vite",
+    "start:api": "node --disable-warning=ExperimentalWarning server/index.js",
+    "dev": "node scripts/dev.js",
+    "dev:web": "vite",
     "build": "vite build",
     "preview": "vite preview",
     "test": "playwright test"
