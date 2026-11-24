@@ -1,31 +1,38 @@
 /**
  * Saffron & Sage — booking request form (booking.html only).
  *
- * This is a front-end demo with no backend: submitting never sends, stores or navigates. A valid
- * request is echoed back in an inline panel that asks the guest to phone the restaurant.
+ * A valid request is POSTed as JSON to /api/bookings (the bookings API in server/, which stores it
+ * in SQLite). The page never navigates. Only after a 201 is the request echoed back in an inline
+ * panel that asks the guest to phone the restaurant; failures show an inline error instead.
  *  1. Date limits: today up to today + 60 days, in the visitor's local time zone.
  *  2. Time slots built from OPENING_HOURS for the chosen date.
  *  3. Validation with the constraint validation API: inline text messages, aria-invalid and
  *     focus on the first problem.
- *  4. The demo summary panel and "Make another request".
+ *  4. The confirmation panel and "Make another request".
+ *
+ * The opening hours, date window and slot rules live in ./booking-rules.js, shared with the server.
  */
 
-/**
- * Opening hours by weekday, indexed like Date#getDay() (0 = Sunday … 6 = Saturday), 24h "HH:MM".
- * Keep in sync with the "Opening hours" list in the footer of every page.
- */
-const OPENING_HOURS = [
-  ['11:00', '21:00'], // Sunday
-  ['12:00', '22:00'], // Monday
-  ['12:00', '22:00'], // Tuesday
-  ['12:00', '22:00'], // Wednesday
-  ['12:00', '22:00'], // Thursday
-  ['12:00', '23:00'], // Friday
-  ['12:00', '23:00'], // Saturday
-];
-const SLOT_INTERVAL_MIN = 30;
-const LAST_SLOT_BEFORE_CLOSE_MIN = 60;
-const MAX_DAYS_AHEAD = 60;
+import { MAX_DAYS_AHEAD, dateLimits, parseDateValue, slotsFor } from './booking-rules.js';
+
+const SAVE_FAILED = 'Could not save your booking, please try again';
+
+const FIELD_LABELS = {
+  name: 'Name',
+  phone: 'Phone',
+  email: 'Email',
+  date: 'Date',
+  time: 'Time',
+  party: 'Party size',
+  notes: 'Notes',
+};
+
+/** Message for a 400 from the API, built from the names of the fields it rejected. */
+function messageFor400(fields) {
+  const labels = (Array.isArray(fields) ? fields : []).map((name) => FIELD_LABELS[name]).filter(Boolean);
+  if (!labels.length) return SAVE_FAILED;
+  return `We could not accept some details (${labels.join(', ')}). Please check them and try again.`;
+}
 
 const TIME_PLACEHOLDER = {
   noDate: 'Choose a date first',
@@ -39,58 +46,6 @@ const DATE_FORMAT = new Intl.DateTimeFormat('en-US', {
   month: 'long',
   year: 'numeric',
 });
-
-/* ---------------------------------------------------------------------------
-   Local date and time helpers
-   Dates are local calendar days. `new Date('YYYY-MM-DD')` and toISOString() work in UTC and
-   would give the wrong day near midnight, so neither is used here.
-   --------------------------------------------------------------------------- */
-
-const pad = (n) => String(n).padStart(2, '0');
-
-/** "YYYY-MM-DD" from the local calendar fields of a Date. */
-function toDateValue(date) {
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
-}
-
-/** A local Date for a "YYYY-MM-DD" value, or null if it is not a real calendar day. */
-function parseDateValue(value) {
-  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
-  if (!match) return null;
-  const [year, month, day] = match.slice(1).map(Number);
-  const date = new Date(year, month - 1, day);
-  return toDateValue(date) === value ? date : null;
-}
-
-const toMinutes = (hhmm) => {
-  const [hours, minutes] = hhmm.split(':').map(Number);
-  return hours * 60 + minutes;
-};
-
-const toHHMM = (minutes) => `${pad(Math.floor(minutes / 60))}:${pad(minutes % 60)}`;
-
-/** The first and last day a request can be made for, as "YYYY-MM-DD". */
-function dateLimits(now) {
-  const [year, month, day] = [now.getFullYear(), now.getMonth(), now.getDate()];
-  return {
-    min: toDateValue(new Date(year, month, day)),
-    max: toDateValue(new Date(year, month, day + MAX_DAYS_AHEAD)),
-  };
-}
-
-/**
- * Start times for a local date: every 30 minutes from opening up to one hour before closing.
- * On today's date, times that have already started are dropped (the current minute is kept).
- */
-function slotsFor(date, now) {
-  const [open, close] = OPENING_HOURS[date.getDay()].map(toMinutes);
-  const earliest = toDateValue(date) === toDateValue(now) ? now.getHours() * 60 + now.getMinutes() : 0;
-  const slots = [];
-  for (let start = open; start <= close - LAST_SLOT_BEFORE_CLOSE_MIN; start += SLOT_INTERVAL_MIN) {
-    if (start >= earliest) slots.push(toHHMM(start));
-  }
-  return slots;
-}
 
 /* ---------------------------------------------------------------------------
    Form
@@ -108,6 +63,8 @@ function initBookingForm(form, result) {
   const dateInput = field('date');
   const timeSelect = field('time');
   const partySelect = field('party');
+  const submitButton = form.querySelector('button[type="submit"]');
+  const submitError = document.getElementById('booking-submit-error');
   let timeState = 'noDate'; // which TIME_PLACEHOLDER the time select currently shows
 
   function applyDateLimits(now) {
@@ -228,18 +185,64 @@ function initBookingForm(form, result) {
     });
   }
 
-  form.addEventListener('submit', (event) => {
-    event.preventDefault(); // nothing is ever sent: there is no backend
+  function payload() {
+    return {
+      name: nameInput.value.trim(),
+      phone: field('phone').value.trim(),
+      email: field('email').value.trim(),
+      date: dateInput.value,
+      time: timeSelect.value,
+      party: Number(partySelect.value),
+      notes: field('notes').value.trim(),
+    };
+  }
+
+  function showSubmitError(text) {
+    submitError.textContent = text;
+    submitError.hidden = false;
+  }
+
+  function hideSubmitError() {
+    submitError.textContent = '';
+    submitError.hidden = true;
+  }
+
+  let submitting = false;
+
+  form.addEventListener('submit', async (event) => {
+    event.preventDefault(); // the request is sent with fetch below, never by a page navigation
+    if (submitting) return; // double click or Enter while in flight: one POST only
+    hideSubmitError();
     refresh();
     const invalid = fields.filter((input) => !validateField(input));
     if (invalid.length) {
       invalid[0].focus();
       return;
     }
-    showResult();
+    submitting = true;
+    submitButton.disabled = true;
+    try {
+      const response = await fetch('/api/bookings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify(payload()),
+      });
+      if (response.status === 201) {
+        showResult();
+        return;
+      }
+      const body = response.status === 400 ? await response.json().catch(() => null) : null;
+      showSubmitError(response.status === 400 ? messageFor400(body?.fields) : SAVE_FAILED);
+    } catch {
+      showSubmitError(SAVE_FAILED);
+    } finally {
+      submitting = false;
+      submitButton.disabled = false;
+    }
   });
 
   result.querySelector('[data-booking-again]').addEventListener('click', () => {
+    hideSubmitError();
     result.hidden = true;
     form.hidden = false;
     refresh();

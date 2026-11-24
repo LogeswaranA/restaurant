@@ -421,6 +421,13 @@ button.button {
   cursor: pointer;
 }
 
+/* In-flight state: dimmed but the dark label stays above 4.5:1 on the saffron fill. */
+.button:disabled {
+  cursor: not-allowed;
+  opacity: 0.8;
+  transform: none;
+}
+
 /* --------------------------------------------------------------------------
    Hero
    -------------------------------------------------------------------------- */
@@ -737,6 +744,10 @@ html:not(.js) .booking-form {
 
 .booking-form__actions {
   padding-top: 0.25rem;
+}
+
+.booking-form__error {
+  margin-bottom: 0.75rem;
 }
 
 .field {

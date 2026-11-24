@@ -104,7 +104,9 @@ async function fillValidRequest(page) {
 /** Records every request the page makes from now on. */
 function recordRequests(page) {
   const requests = [];
-  page.on('request', (req) => requests.push(req.url()));
+  page.on('request', (req) =>
+    requests.push({ method: req.method(), url: req.url(), body: req.method() === 'POST' ? req.postDataJSON() : null }),
+  );
   return requests;
 }
 
@@ -331,6 +333,13 @@ test('AC-6: Reserve a Table opens the booking page; the footer keeps the phone l
 test.describe('Booking form', () => {
   test.use({ timezoneId: TIME_ZONE });
 
+  // The clock is fixed in June 2026, so the real API would reject these dates: mock it with a 201.
+  test.beforeEach(async ({ page }) => {
+    await page.route('**/api/bookings', (route) =>
+      route.fulfill({ status: 201, contentType: 'application/json', body: '{"id":1,"created_at":"2026-06-14T16:00:00.000Z"}' }),
+    );
+  });
+
   test('AC-7: every field has a visible label, required fields are marked, no form action', async ({ page }) => {
     await openBookingAt(page, SUNDAY_MORNING);
     await expect(form(page)).toHaveCount(1);
@@ -475,7 +484,7 @@ test.describe('Booking form', () => {
     await expect(statusPanel(page)).toBeHidden();
   });
 
-  test('AC-11: a valid request shows an honest demo summary and sends or stores nothing', async ({ page }) => {
+  test('AC-11: a valid request shows an honest summary and sends exactly one POST to the API', async ({ page }) => {
     await openBookingAt(page, SUNDAY_MORNING);
     const url = page.url();
     const requests = recordRequests(page);
@@ -489,13 +498,22 @@ test.describe('Booking form', () => {
     await expect(form(page)).toBeHidden();
 
     const text = await panel.innerText();
-    for (const part of ['Ada Lovelace', '4', 'Sunday', '21', 'June', '19:00', 'demo', '+1 (555) 0100']) {
+    for (const part of ['Ada Lovelace', '4', 'Sunday', '21', 'June', '19:00', 'saved', '+1 (555) 0100']) {
       expect(text, part).toContain(part);
     }
     expect(text).not.toMatch(/\b(booked|confirmed)\b/i);
     await expect(panel.locator('a[href="tel:+15550100"]')).toHaveCount(1);
 
-    expect(requests).toEqual([]);
+    expect(requests).toHaveLength(1);
+    expect(requests[0].method).toBe('POST');
+    expect(new URL(requests[0].url).pathname).toBe('/api/bookings');
+    expect(requests[0].body).toMatchObject({
+      name: 'Ada Lovelace',
+      phone: '+1 555 0199',
+      date: '2026-06-21',
+      time: '19:00',
+      party: 4,
+    });
     expect(page.url()).toBe(url);
     expect(page.url()).not.toContain('?');
     expect(await page.evaluate(() => localStorage.length + sessionStorage.length)).toBe(0);
@@ -571,14 +589,15 @@ test.describe('Booking form', () => {
 
 /* ================================================================== AC-14 */
 
-test('AC-14: README and package.json describe the multi-page site and its backend-free booking page', () => {
+test('AC-14: README and package.json describe the multi-page site and its booking page and its SQLite storage', () => {
   const readme = readFileSync(path.join(ROOT, 'README.md'), 'utf8');
   const pkg = JSON.parse(readFileSync(path.join(ROOT, 'package.json'), 'utf8'));
 
   expect(readme).not.toMatch(/single[- ]page/i);
   expect(pkg.description).not.toMatch(/single[- ]page/i);
   expect(readme).toMatch(/booking\.html|booking page/i);
-  expect(readme).toMatch(/no backend/i);
+  expect(readme).toMatch(/SQLite/);
+  expect(readme).toMatch(/BOOKINGS_DB_PATH/);
 
   // No new dependencies of any kind.
   expect(pkg.dependencies).toBeUndefined();
